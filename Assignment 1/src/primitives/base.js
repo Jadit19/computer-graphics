@@ -1,6 +1,6 @@
 class PrimitiveBase {
   constructor (color) {
-    this.color = color
+    this.color = [color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, 1.0]
     this.setupMatrix()
   }
 

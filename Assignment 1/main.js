@@ -4,20 +4,40 @@ var init
 /** @type {Buffer} */
 var buffer
 
-const color = {
-  red: [0.8, 0.0, 0.0, 1.0],
-  green: [0.0, 0.8, 0.0, 1.0],
-  blue: [0.0, 0.0, 0.8, 1.0]
+/** @type {Tree} */
+var leftTree, centerTree, rightTree
+
+var color = {
+  backgroud: [24.0, 194.0, 255.0]
+}
+
+const drawTrees = () => {
+  leftTree = new Tree()
+  centerTree = new Tree()
+  rightTree = new Tree()
+
+  leftTree.translate(0.1, 0.21)
+  leftTree.scale(0.35)
+  centerTree.translate(0.33, 0.3)
+  centerTree.scale(0.48)
+  rightTree.translate(0.65, 0.25)
+  rightTree.scale(0.4)
+
+  rightTree.draw()
+  centerTree.draw()
+  leftTree.draw()
 }
 
 const drawScene = () => {
   init.clear()
+
+  drawTrees()
 }
 
 const webGLStart = () => {
   const canvas = document.getElementById('canvas')
 
-  init = new Init(canvas)
+  init = new Init(canvas, color.backgroud)
   buffer = new Buffer()
 
   drawScene()

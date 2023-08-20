@@ -1,6 +1,7 @@
 class Init {
-  constructor (canvas) {
+  constructor (canvas, background) {
     this.canvas = canvas
+    this.background = background
     this.setupGL()
     this.setupShaders()
     this.setupLocations()
@@ -90,7 +91,12 @@ void main() {
   }
 
   clear () {
-    this.gl.clearColor(0.9, 0.9, 0.9, 1.0)
+    this.gl.clearColor(
+      this.background[0] / 255.0,
+      this.background[1] / 255.0,
+      this.background[2] / 255.0,
+      1.0
+    )
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
   }
 }

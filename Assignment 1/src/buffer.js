@@ -17,7 +17,14 @@ class Buffer {
   }
 
   initTriangleLocations () {
-    this.triangle.vertices = new Float32Array([0.0, 0.5, -0.5, -0.5, 0.5, -0.5])
+    this.triangle.vertices = new Float32Array([
+      0.0,
+      0.5,
+      -Math.sqrt(3) / 4,
+      -0.25,
+      Math.sqrt(3) / 4,
+      -0.25
+    ])
     this.triangle.vertex = init.gl.createBuffer()
     init.gl.bindBuffer(init.gl.ARRAY_BUFFER, this.triangle.vertex)
     init.gl.bufferData(
