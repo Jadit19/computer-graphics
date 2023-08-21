@@ -19,6 +19,9 @@ var cloud
 /** @type {Bird} */
 var bird1, bird2, bird3, bird4, bird5
 
+/** @type {Sun} */
+var sun
+
 var color = {
   backgroud: [128, 202, 250]
 }
@@ -62,6 +65,7 @@ const drawBackground = () => {
   bird3.draw()
   bird4.draw()
   bird5.draw()
+  sun.draw()
 }
 
 const drawScenery = () => {
@@ -88,6 +92,8 @@ const initialize = () => {
   bird3 = new Bird()
   bird4 = new Bird()
   bird5 = new Bird()
+
+  sun = new Sun()
 }
 
 const webGLStart = () => {
