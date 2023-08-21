@@ -10,6 +10,9 @@ var leftTree, centerTree, rightTree
 /** @type {Mountain} */
 var leftMountain, centerMountain, rightMountain
 
+/** @type {Background} */
+var background
+
 var color = {
   backgroud: [128, 202, 250]
 }
@@ -28,7 +31,7 @@ const drawTrees = () => {
 }
 
 const drawBackground = () => {
-  leftMountain.translate(-0.5, 0)
+  leftMountain.translate(-0.6, 0)
   leftMountain.scale(1.3)
   centerMountain.scale(1.9)
   centerMountain.translate(0.1, 0)
@@ -38,6 +41,8 @@ const drawBackground = () => {
   leftMountain.draw()
   rightMountain.draw()
   centerMountain.draw()
+
+  background.draw()
 }
 
 const drawScenery = () => {
@@ -55,6 +60,8 @@ const initialize = () => {
   leftMountain = new Mountain()
   centerMountain = new Mountain()
   rightMountain = new Mountain()
+
+  background = new Background()
 }
 
 const webGLStart = () => {

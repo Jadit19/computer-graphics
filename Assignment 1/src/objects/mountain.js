@@ -1,7 +1,7 @@
 class Mountain {
   constructor () {
-    this.light_color = [145, 121, 87]
-    this.dark_color = [123, 94, 70]
+    this.lightColor = [145, 121, 87]
+    this.darkColor = [123, 94, 70]
 
     this.make()
   }
@@ -12,11 +12,11 @@ class Mountain {
   }
 
   makeDark () {
-    this.darkTriangle = new Triangle(this.dark_color)
+    this.darkTriangle = new Triangle(this.darkColor)
   }
 
   makeLight () {
-    this.lightTriangle = new Triangle(this.light_color)
+    this.lightTriangle = new Triangle(this.lightColor)
   }
 
   translate (translateX, translateY) {
