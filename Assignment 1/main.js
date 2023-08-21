@@ -16,6 +16,9 @@ var background
 /** @type {Cloud} */
 var cloud
 
+/** @type {Bird} */
+var bird1, bird2, bird3, bird4, bird5
+
 var color = {
   backgroud: [128, 202, 250]
 }
@@ -40,14 +43,25 @@ const drawBackground = () => {
   centerMountain.translate(0.1, 0)
   rightMountain.translate(0.9, 0)
   rightMountain.scale(1.2)
+  bird2.translate(-0.2, 0.25)
+  bird2.scale(0.7)
+  bird3.translate(0.2, 0.35)
+  bird3.scale(0.7)
+  bird4.translate(-0.066, 0.45)
+  bird4.scale(0.5)
+  bird5.translate(0, 0.64)
+  bird5.scale(0.3)
 
   leftMountain.draw()
   rightMountain.draw()
   centerMountain.draw()
-
   background.draw()
-
   cloud.draw()
+  bird1.draw()
+  bird2.draw()
+  bird3.draw()
+  bird4.draw()
+  bird5.draw()
 }
 
 const drawScenery = () => {
@@ -68,6 +82,12 @@ const initialize = () => {
 
   background = new Background()
   cloud = new Cloud()
+
+  bird1 = new Bird()
+  bird2 = new Bird()
+  bird3 = new Bird()
+  bird4 = new Bird()
+  bird5 = new Bird()
 }
 
 const webGLStart = () => {
