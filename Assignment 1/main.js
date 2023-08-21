@@ -13,6 +13,9 @@ var leftMountain, centerMountain, rightMountain
 /** @type {Background} */
 var background
 
+/** @type {Cloud} */
+var cloud
+
 var color = {
   backgroud: [128, 202, 250]
 }
@@ -43,6 +46,8 @@ const drawBackground = () => {
   centerMountain.draw()
 
   background.draw()
+
+  cloud.draw()
 }
 
 const drawScenery = () => {
@@ -62,6 +67,7 @@ const initialize = () => {
   rightMountain = new Mountain()
 
   background = new Background()
+  cloud = new Cloud()
 }
 
 const webGLStart = () => {
