@@ -8,7 +8,7 @@ var buffer
 var leftTree, centerTree, rightTree
 
 var color = {
-  backgroud: [24.0, 194.0, 255.0]
+  backgroud: [128, 202, 250]
 }
 
 const drawTrees = () => {

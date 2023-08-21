@@ -1,8 +1,8 @@
 class Tree {
   constructor () {
-    this.leafColor1 = [0, 214, 66]
-    this.leafColor2 = [0, 185, 65]
-    this.leafColor3 = [2, 154, 69]
+    this.leafColor1 = [128, 202, 95]
+    this.leafColor2 = [105, 177, 90]
+    this.leafColor3 = [67, 151, 85]
     this.trunkColor = [128, 58, 69]
     this.make()
   }
