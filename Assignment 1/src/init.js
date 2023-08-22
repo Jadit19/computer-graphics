@@ -43,7 +43,7 @@ uniform mat4 uMMatrix;
 
 void main() {
   gl_Position = uMMatrix*vec4(aPosition,0.0,1.0);
-  gl_PointSize = 10.0;
+  gl_PointSize = 3.0;
 }`
     this.gl.shaderSource(this.vertexShader, this.vertexShaderCode)
     this.gl.compileShader(this.vertexShader)

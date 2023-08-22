@@ -1,3 +1,5 @@
+var drawMode = 3
+
 /** @type {Init} */
 var init
 
@@ -24,6 +26,12 @@ var sun
 
 var color = {
   backgroud: [128, 202, 250]
+}
+
+const changeDrawMode = newDrawMode => {
+  drawMode = newDrawMode
+  initialize()
+  drawScenery()
 }
 
 const drawTrees = () => {

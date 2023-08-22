@@ -40,7 +40,11 @@ class PrimitiveBase {
     init.gl.bindBuffer(init.gl.ELEMENT_ARRAY_BUFFER, indexBuf)
     init.gl.uniform4fv(init.uColorLoc, this.color)
     init.gl.drawElements(
-      init.gl.TRIANGLES,
+      drawMode == 1
+        ? init.gl.POINTS
+        : drawMode == 2
+        ? init.gl.LINE_LOOP
+        : init.gl.TRIANGLES,
       indexBuf.numItems,
       init.gl.UNSIGNED_SHORT,
       0
