@@ -2,6 +2,7 @@ class Mountain {
   constructor () {
     this.lightColor = [145, 121, 87]
     this.darkColor = [123, 94, 70]
+    this.isAdjusted = false
 
     this.make()
   }
@@ -30,11 +31,14 @@ class Mountain {
   }
 
   draw () {
-    this.darkTriangle.scale(0.6, 0.3)
-    this.darkTriangle.translate(-0.3, -0.02)
-    this.lightTriangle.scale(1, 0.3)
-    this.lightTriangle.rotate(18)
-    this.lightTriangle.translate(-0.022, 0.01)
+    if (!this.isAdjusted) {
+      this.darkTriangle.scale(0.6, 0.3)
+      this.darkTriangle.translate(-0.3, -0.02)
+      this.lightTriangle.scale(1, 0.3)
+      this.lightTriangle.rotate(18)
+      this.lightTriangle.translate(-0.022, 0.01)
+      this.isAdjusted = true
+    }
 
     this.darkTriangle.draw()
     this.lightTriangle.draw()

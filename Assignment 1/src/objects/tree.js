@@ -5,6 +5,7 @@ class Tree {
     this.leafColor3 = [67, 151, 85]
     this.trunkColor = [128, 58, 69]
     this.make()
+    this.isAdjusted = false
   }
 
   make () {
@@ -37,11 +38,14 @@ class Tree {
   }
 
   draw () {
-    this.topLeaf.translate(0, 0.5)
-    this.middleLeaf.translate(0, 0.4)
-    this.bottomLeaf.translate(0, 0.3)
-    this.trunk.scale(0.13, 0.85)
-    this.trunk.translate(0, -0.3)
+    if (!this.isAdjusted) {
+      this.topLeaf.translate(0, 0.5)
+      this.middleLeaf.translate(0, 0.4)
+      this.bottomLeaf.translate(0, 0.3)
+      this.trunk.scale(0.13, 0.85)
+      this.trunk.translate(0, -0.3)
+      this.isAdjusted = true
+    }
 
     this.trunk.draw()
     this.bottomLeaf.draw()

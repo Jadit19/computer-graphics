@@ -1,6 +1,7 @@
 class Bird {
   constructor () {
     this.color = [0, 0, 0]
+    this.isAdjusted = false
 
     this.make()
   }
@@ -24,14 +25,17 @@ class Bird {
   }
 
   draw () {
-    this.body.translate(0, 0.6)
-    this.body.scale(0.015, 0.015)
-    this.leftWing.translate(-0.03, 0.62)
-    this.leftWing.rotate(-20)
-    this.leftWing.scale(0.1, 0.015)
-    this.rightWing.translate(0.03, 0.62)
-    this.rightWing.rotate(20)
-    this.rightWing.scale(0.1, 0.015)
+    if (!this.isAdjusted) {
+      this.body.translate(0, 0.6)
+      this.body.scale(0.015, 0.015)
+      this.leftWing.translate(-0.03, 0.62)
+      this.leftWing.rotate(-20)
+      this.leftWing.scale(0.1, 0.015)
+      this.rightWing.translate(0.03, 0.62)
+      this.rightWing.rotate(20)
+      this.rightWing.scale(0.1, 0.015)
+      this.isAdjusted = true
+    }
 
     this.body.draw()
     this.leftWing.draw()
