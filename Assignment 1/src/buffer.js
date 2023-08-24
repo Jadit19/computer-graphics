@@ -3,6 +3,8 @@ class Buffer {
     this.initTriangle()
     this.initSquare()
     this.initCircle()
+    this.initFan()
+    this.initTrapezium()
   }
 
   initTriangle () {
@@ -94,7 +96,7 @@ class Buffer {
       vertex: null,
       indices: null,
       index: null,
-      segments: 100
+      segments: 20
     }
     this.initCircleLocations()
     this.initCircleIndices()
@@ -140,5 +142,83 @@ class Buffer {
     )
     this.circle.index.itemSize = 1
     this.circle.index.numItems = (this.circle.segments + 1) * 3
+  }
+
+  initFan () {
+    this.fan = {
+      vertices: null,
+      vertex: null,
+      indices: null,
+      index: null
+    }
+    this.initFanLocations()
+    this.initFanIndices()
+  }
+
+  initFanLocations () {
+    this.fan.vertices = new Float32Array([
+      0.0, 0.0, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5
+    ])
+    this.fan.vertex = init.gl.createBuffer()
+    init.gl.bindBuffer(init.gl.ARRAY_BUFFER, this.fan.vertex)
+    init.gl.bufferData(
+      init.gl.ARRAY_BUFFER,
+      this.fan.vertices,
+      init.gl.STATIC_DRAW
+    )
+    this.fan.vertex.itemSize = 2
+    this.fan.vertex.numItems = 5
+  }
+
+  initFanIndices () {
+    this.fan.indices = new Uint16Array([0, 1, 2, 0, 3, 4])
+    this.fan.index = init.gl.createBuffer()
+    init.gl.bindBuffer(init.gl.ELEMENT_ARRAY_BUFFER, this.fan.index)
+    init.gl.bufferData(
+      init.gl.ELEMENT_ARRAY_BUFFER,
+      this.fan.indices,
+      init.gl.STATIC_DRAW
+    )
+    this.fan.index.itemSize = 1
+    this.fan.index.numItems = 6
+  }
+
+  initTrapezium () {
+    this.trapezium = {
+      vertices: null,
+      vertex: null,
+      indices: null,
+      index: null
+    }
+    this.initTrapeziumLocations()
+    this.initTrapeziumIndices()
+  }
+
+  initTrapeziumLocations () {
+    this.trapezium.vertices = new Float32Array([
+      -0.5, 0.5, 0.5, 0.5, 0.4, -0.5, -0.4, -0.5
+    ])
+    this.trapezium.vertex = init.gl.createBuffer()
+    init.gl.bindBuffer(init.gl.ARRAY_BUFFER, this.trapezium.vertex)
+    init.gl.bufferData(
+      init.gl.ARRAY_BUFFER,
+      this.trapezium.vertices,
+      init.gl.STATIC_DRAW
+    )
+    this.trapezium.vertex.itemSize = 2
+    this.trapezium.vertex.numItems = 4
+  }
+
+  initTrapeziumIndices () {
+    this.trapezium.indices = new Uint16Array([0, 1, 2, 0, 2, 3])
+    this.trapezium.index = init.gl.createBuffer()
+    init.gl.bindBuffer(init.gl.ELEMENT_ARRAY_BUFFER, this.trapezium.index)
+    init.gl.bufferData(
+      init.gl.ELEMENT_ARRAY_BUFFER,
+      this.trapezium.indices,
+      init.gl.STATIC_DRAW
+    )
+    this.trapezium.index.itemSize = 1
+    this.trapezium.index.numItems = 6
   }
 }

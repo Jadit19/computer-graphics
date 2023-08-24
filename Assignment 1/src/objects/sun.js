@@ -17,21 +17,21 @@ class Sun {
   makeRays () {
     this.ray1 = new Square(this.color)
     this.ray1.translate(-0.6, 0.82)
-    this.ray1.scaleWithRotate(0.005, 0.28)
+    this.ray1.scaleDynamically(0.005, 0.28)
 
     this.ray2 = new Square(this.color)
     this.ray2.translate(-0.6, 0.82)
-    this.ray2.scaleWithRotate(0.005, 0.28)
+    this.ray2.scaleDynamically(0.005, 0.28)
     this.ray2.rotate(45)
 
     this.ray3 = new Square(this.color)
     this.ray3.translate(-0.6, 0.82)
-    this.ray3.scaleWithRotate(0.005, 0.28)
+    this.ray3.scaleDynamically(0.005, 0.28)
     this.ray3.rotate(90)
 
     this.ray4 = new Square(this.color)
     this.ray4.translate(-0.6, 0.82)
-    this.ray4.scaleWithRotate(0.005, 0.28)
+    this.ray4.scaleDynamically(0.005, 0.28)
     this.ray4.rotate(135)
   }
 

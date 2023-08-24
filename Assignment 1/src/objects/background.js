@@ -4,6 +4,7 @@ class Background {
     this.riverHighlightColor = [150, 200, 236]
     this.groundColor = [104, 226, 138]
     this.groundShadowColor = [120, 177, 72]
+    this.skyColor = [128, 202, 250]
 
     this.make()
   }

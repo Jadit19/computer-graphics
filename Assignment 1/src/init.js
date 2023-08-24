@@ -1,7 +1,7 @@
 class Init {
-  constructor (canvas, background) {
+  constructor (canvas) {
     this.canvas = canvas
-    this.background = background
+    this.background = [255, 255, 255]
     this.setupGL()
     this.setupShaders()
     this.setupLocations()

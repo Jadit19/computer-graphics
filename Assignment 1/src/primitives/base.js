@@ -3,6 +3,7 @@ class PrimitiveBase {
     this.color = [color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, 1.0]
     this.setupMatrix()
     this.scaleFactors = []
+    this.rotateFactors = []
   }
 
   setupMatrix () {
@@ -18,12 +19,16 @@ class PrimitiveBase {
     this.mMatrix = mat4.rotateZ(this.mMatrix, (angle * Math.PI) / 180)
   }
 
+  rotateDynamically (angle) {
+    this.rotateFactors.push(angle)
+  }
+
   scale (scaleX, scaleY) {
     this.mMatrix = mat4.scale(this.mMatrix, [scaleX, scaleY, 1.0])
     this.scaleFactors.push(scaleX)
   }
 
-  scaleWithRotate (scaleX, scaleY) {
+  scaleDynamically (scaleX, scaleY) {
     this.scaleFactors.push({
       x: scaleX,
       y: scaleY
@@ -31,6 +36,11 @@ class PrimitiveBase {
   }
 
   drawBase (vertexBuf, indexBuf) {
+    for (let i = 0; i < this.rotateFactors.length; i++) {
+      if (typeof this.rotateFactors[i] === 'number') {
+        this.rotate(this.rotateFactors[i])
+      }
+    }
     for (let i = 0; i < this.scaleFactors.length; i++) {
       if (typeof this.scaleFactors[i].x === 'number') {
         this.scale(this.scaleFactors[i].x, this.scaleFactors[i].y)
@@ -66,5 +76,11 @@ class PrimitiveBase {
         this.scale(1 / this.scaleFactors[i].x, 1 / this.scaleFactors[i].y)
       }
     }
+    for (let i = this.rotateFactors.length - 1; i >= 0; i--) {
+  if (typeof this.rotateFactors[i] === 'number') {
+    this.rotate(-this.rotateFactors[i])
+  }
+}
+
   }
 }
