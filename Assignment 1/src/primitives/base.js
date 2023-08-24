@@ -77,10 +77,9 @@ class PrimitiveBase {
       }
     }
     for (let i = this.rotateFactors.length - 1; i >= 0; i--) {
-  if (typeof this.rotateFactors[i] === 'number') {
-    this.rotate(-this.rotateFactors[i])
-  }
-}
-
+      if (typeof this.rotateFactors[i] === 'number') {
+        this.rotate(-this.rotateFactors[i])
+      }
+    }
   }
 }

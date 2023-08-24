@@ -96,7 +96,7 @@ class Buffer {
       vertex: null,
       indices: null,
       index: null,
-      segments: 20
+      segments: 30
     }
     this.initCircleLocations()
     this.initCircleIndices()
