@@ -1,0 +1,5 @@
+class Cube {
+  constructor () {}
+
+  draw () {}
+}
