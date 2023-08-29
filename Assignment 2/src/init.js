@@ -98,7 +98,10 @@ void main() {
       this.shaderProgram,
       'uPMatrix'
     )
-    this.uColorLoc = this.gl.getUniformLocation(this.shaderProgram, 'objColor')
+    this.uColorLocation = this.gl.getUniformLocation(
+      this.shaderProgram,
+      'objColor'
+    )
     this.gl.enableVertexAttribArray(this.aPositionLocation)
   }
 

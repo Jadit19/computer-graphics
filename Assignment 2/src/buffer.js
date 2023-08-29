@@ -18,18 +18,12 @@ class Buffer {
 
   initCubeLocations () {
     this.cube.vertices = new Float32Array([
-      // Front face
-      -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
-      // Back face
-      -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5,
-      // Top face
-      -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
-      // Bottom face
-      -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5,
-      // Right face
-      0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5,
-      // Left face
-      -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5
+      -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5,
+      -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5,
+      -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5,
+      0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5,
+      0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5,
+      -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5
     ])
     this.cube.vertex = this.gl.createBuffer()
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.cube.vertex)
@@ -39,7 +33,7 @@ class Buffer {
       this.gl.STATIC_DRAW
     )
     this.cube.vertex.itemSize = 3
-    this.cube.vertex.numItems = 72
+    this.cube.vertex.numItems = this.cube.vertices.length
   }
 
   initCubeIndices () {
@@ -55,6 +49,6 @@ class Buffer {
       this.gl.STATIC_DRAW
     )
     this.cube.index.itemSize = 1
-    this.cube.index.numItems = 36
+    this.cube.index.numItems = this.cube.indices.length
   }
 }

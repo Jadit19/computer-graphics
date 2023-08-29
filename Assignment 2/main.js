@@ -4,10 +4,21 @@ var init1, init2, init3
 /** @type {Buffer} */
 var buffer1, buffer2, buffer3
 
+/** @type {Cube} */
+var cube
+
+const initialize = () => {
+  cube = new Cube([0, 0, 0])
+}
+
 const drawScene = () => {
   init1.clear()
   init2.clear()
   init3.clear()
+
+  cube.draw(1)
+  cube.draw(2)
+  cube.draw(3)
 }
 
 const webGLStart = () => {
@@ -23,5 +34,6 @@ const webGLStart = () => {
   buffer2 = new Buffer(init2.gl)
   buffer3 = new Buffer(init3.gl)
 
+  initialize()
   drawScene()
 }
