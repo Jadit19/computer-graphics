@@ -7,7 +7,6 @@ class PrimitiveBase {
   setupMatrix () {
     this.mMatrix = mat4.create()
     mat4.identity(this.mMatrix)
-    this.mMatrix = mat4.rotate(this.mMatrix, 0.5, [0, 1, 0])
 
     this.vMatrix = mat4.create()
     mat4.identity(this.vMatrix)
