@@ -1,9 +1,9 @@
-class Cube extends PrimitiveBase {
+class Sphere extends PrimitiveBase {
   constructor (color) {
     super(color)
   }
 
   draw (buffer, init) {
-    this.drawBase(buffer.cube, init)
+    this.drawBase(buffer.sphere, init)
   }
 }

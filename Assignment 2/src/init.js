@@ -13,6 +13,7 @@ class Init {
       this.gl = this.canvas.getContext('webgl2')
       this.gl.viewportWidth = this.canvas.width
       this.gl.viewportHeight = this.canvas.height
+      // this.gl.enable(this.gl.DEPTH_TEST)
     } catch (e) {
       console.error(e)
     }

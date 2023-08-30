@@ -7,7 +7,7 @@ class PrimitiveBase {
   setupMatrix () {
     this.mMatrix = mat4.create()
     mat4.identity(this.mMatrix)
-    this.mMatrix = mat4.rotate(this.mMatrix, 0.7, [0, 1, 0])
+    this.mMatrix = mat4.rotate(this.mMatrix, 0.5, [0, 1, 0])
 
     this.vMatrix = mat4.create()
     mat4.identity(this.vMatrix)
@@ -23,29 +23,26 @@ class PrimitiveBase {
     mat4.perspective(50, 1.0, 0.1, 1000, this.pMatrix)
   }
 
-  drawBase (vertexBuf, indexBuf, canvasNumber) {
-    /** @type {Init} */
-    let init = canvasNumber === 1 ? init1 : canvasNumber === 2 ? init2 : init3
-    init.gl.bindBuffer(init.gl.ARRAY_BUFFER, vertexBuf)
+  drawBase (buffer, init) {
+    init.gl.bindBuffer(init.gl.ARRAY_BUFFER, buffer.vertex)
     init.gl.vertexAttribPointer(
       init.aPositionLocation,
-      vertexBuf.itemSize,
+      buffer.vertex.itemSize,
       init.gl.FLOAT,
       false,
       0,
       0
     )
-    init.gl.bindBuffer(init.gl.ELEMENT_ARRAY_BUFFER, indexBuf)
+    init.gl.bindBuffer(init.gl.ELEMENT_ARRAY_BUFFER, buffer.index)
     init.gl.uniform4fv(init.uColorLocation, this.color)
     init.gl.uniformMatrix4fv(init.uMMatrixLocation, false, this.mMatrix)
     init.gl.uniformMatrix4fv(init.uVMatrixLocation, false, this.vMatrix)
     init.gl.uniformMatrix4fv(init.uPMatrixLocation, false, this.pMatrix)
     init.gl.drawElements(
       init.gl.LINE_LOOP,
-      indexBuf.numItems,
+      buffer.index.numItems,
       init.gl.UNSIGNED_SHORT,
       0
     )
-    console.log('Done')
   }
 }
