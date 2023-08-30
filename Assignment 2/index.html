@@ -18,8 +18,33 @@
     <script type="text/javascript" src="main.js"></script>
   </head>
   <body onload="webGLStart()">
-    <canvas width="400" height="400" id="canvas1"></canvas>
-    <canvas width="400" height="400" id="canvas2"></canvas>
-    <canvas width="400" height="400" id="canvas3"></canvas>
+    <canvas width="600" height="600" id="canvas1"></canvas>
+    <canvas width="600" height="600" id="canvas2"></canvas>
+    <canvas width="600" height="600" id="canvas3"></canvas>
+
+    <br />
+    <br />
+    <label for="position">Control Light Position:</label>
+    <input
+      type="range"
+      id="position"
+      min="0"
+      max="100"
+      step="1"
+      value="50"
+      style="width: 400px"
+    />
+
+    <br />
+    <label for="zoom">Control Camera Zoom:</label>
+    <input
+      type="range"
+      id="zoom"
+      min="0"
+      max="100"
+      step="1"
+      value="50"
+      style="width: 400px"
+    />
   </body>
 </html>
