@@ -7,12 +7,11 @@ class PrimitiveBase {
   setupMatrix () {
     this.mMatrix = mat4.create()
     mat4.identity(this.mMatrix)
-    this.mMatrix = mat4.rotate(this.mMatrix, 1.57, [0, 1, 0])
 
     this.vMatrix = mat4.create()
     mat4.identity(this.vMatrix)
     this.vMatrix = mat4.lookAt(
-      [0.0, 0.0, 3.0],
+      [0.0, 0.0, 2.0],
       [0.0, 0.0, 0.0],
       [0.0, 1.0, 0.0],
       this.vMatrix
@@ -24,6 +23,26 @@ class PrimitiveBase {
 
   addPerspective () {
     mat4.perspective(zoom, 1.0, 0.1, 1000, this.pMatrix)
+  }
+
+  clearAll () {
+    mat4.identity(this.mMatrix)
+  }
+
+  rotateX (degrees) {
+    this.mMatrix = mat4.rotate(
+      this.mMatrix,
+      (degrees * Math.PI) / 180,
+      [1, 0, 0]
+    )
+  }
+
+  rotateY (degrees) {
+    this.mMatrix = mat4.rotate(
+      this.mMatrix,
+      (degrees * Math.PI) / 180,
+      [0, 1, 0]
+    )
   }
 
   drawBase (buffer, init) {
