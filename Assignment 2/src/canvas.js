@@ -1,6 +1,7 @@
 class Canvas {
-  constructor (canvasId, background) {
-    this.element = document.getElementById(canvasId)
+  constructor (canvasNumber, background) {
+    this.canvasNumber = canvasNumber
+    this.element = document.getElementById('canvas' + String(canvasNumber))
     this.init = new Init(this.element, background)
     this.buffer = new Buffer(this.init.gl)
 
@@ -33,14 +34,15 @@ class Canvas {
 
   onMouseDown (event) {
     this.listenEvents = true
+    var valueX = event.clientX - this.element.width * (this.canvasNumber - 1)
 
     if (
-      event.layerX <= this.element.width &&
-      event.layerX >= 0 &&
-      event.layerY <= this.element.height &&
-      event.layerY >= 0
+      valueX <= this.element.width &&
+      valueX >= 0 &&
+      event.clientY <= this.element.height &&
+      event.clientY >= 0
     ) {
-      this.prevMouseX = event.clientX
+      this.prevMouseX = valueX
       this.prevMouseY = this.element.height - event.clientY
     }
   }
@@ -49,13 +51,14 @@ class Canvas {
       return
     }
 
+    var valueX = event.clientX - this.element.width * (this.canvasNumber - 1)
     if (
-      event.layerX <= this.element.width &&
-      event.layerX >= 0 &&
-      event.layerY <= this.element.height &&
-      event.layerY >= 0
+      valueX <= this.element.width &&
+      valueX >= 0 &&
+      event.clientY <= this.element.height &&
+      event.clientY >= 0
     ) {
-      var mouseX = event.clientX
+      var mouseX = valueX
       var diffX1 = mouseX - this.prevMouseX
       this.prevMouseX = mouseX
       this.degree0 = this.degree0 + diffX1 / 5
@@ -87,6 +90,10 @@ class Canvas {
 
   translateObject (objectNumber, translateX, translateY, translateZ) {
     this.objects[objectNumber].translate(translateX, translateY, translateZ)
+  }
+
+  scaleObject (objectNumber, scaleX, scaleY, scaleZ) {
+    this.objects[objectNumber].scale(scaleX, scaleY, scaleZ)
   }
 
   draw () {

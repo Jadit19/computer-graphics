@@ -4,6 +4,7 @@ class PrimitiveBase {
     this.setupMatrix()
 
     this.translateArray = []
+    this.scaleArray = []
   }
 
   setupMatrix () {
@@ -36,6 +37,13 @@ class PrimitiveBase {
         this.translateArray[i][2]
       ])
     }
+    for (let i = 0; i < this.scaleArray.length; i++) {
+      this.mMatrix = mat4.scale(this.mMatrix, [
+        this.scaleArray[i][0],
+        this.scaleArray[i][1],
+        this.scaleArray[i][2]
+      ])
+    }
   }
 
   rotateX (degrees) {
@@ -54,8 +62,20 @@ class PrimitiveBase {
     )
   }
 
+  rotateZ (degrees) {
+    this.mMatrix = mat4.rotate(
+      this.mMatrix,
+      (degrees * Math.PI) / 180,
+      [0, 0, 1]
+    )
+  }
+
   translate (translateX, translateY, translateZ) {
     this.translateArray.push([translateX, translateY, translateZ])
+  }
+
+  scale (scaleX, scaleY, scaleZ) {
+    this.scaleArray.push([scaleX, scaleY, scaleZ])
   }
 
   drawBase (buffer, init) {
