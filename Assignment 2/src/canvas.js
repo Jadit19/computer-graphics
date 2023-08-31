@@ -3,6 +3,8 @@ class Canvas {
     this.element = document.getElementById(canvasId)
     this.init = new Init(this.element, background)
     this.buffer = new Buffer(this.init.gl)
+
+    /** @type {Array<PrimitiveBase>} */
     this.objects = []
 
     this.addEventListeners()
@@ -83,14 +85,18 @@ class Canvas {
     this.objects.push(newSphere)
   }
 
+  translateObject (objectNumber, translateX, translateY, translateZ) {
+    this.objects[objectNumber].translate(translateX, translateY, translateZ)
+  }
+
   draw () {
     this.init.clear()
 
     for (let i = 0; i < this.objects.length; i++) {
       this.objects[i].clearAll()
-      this.objects[i].addPerspective()
       this.objects[i].rotateY(this.degree0)
       this.objects[i].rotateX(this.degree1)
+      this.objects[i].addPerspective()
       this.objects[i].draw(this.buffer, this.init)
     }
   }

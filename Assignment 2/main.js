@@ -3,6 +3,12 @@ var canvas1, canvas2, canvas3
 
 var position, positionSlider
 var zoom, zoomSlider
+var drawMode
+
+const changeDrawMode = newDrawMode => {
+  drawMode = newDrawMode
+  drawScene()
+}
 
 const addEventListeners = () => {
   position = 50
@@ -12,17 +18,20 @@ const addEventListeners = () => {
     drawScene()
   })
 
-  zoom = 50
+  zoom = 70
   zoomSlider = document.getElementById('zoom')
   zoomSlider.addEventListener('input', () => {
-    zoom = 100 - zoomSlider.value
+    zoom = 120 - zoomSlider.value
     drawScene()
   })
 }
 
 const initialize = () => {
-  canvas1.addCube([0, 0, 0])
+  drawMode = 2
   canvas1.addSphere([0, 0, 0])
+  canvas1.translateObject(0, 0, 0.5, 0)
+  canvas1.addCube([0, 0, 0])
+  canvas1.translateObject(1, 0, -0.5, 0)
 }
 
 const drawScene = () => {

@@ -2,6 +2,8 @@ class PrimitiveBase {
   constructor (color) {
     this.color = [color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, 1.0]
     this.setupMatrix()
+
+    this.translateArray = []
   }
 
   setupMatrix () {
@@ -21,12 +23,19 @@ class PrimitiveBase {
     mat4.identity(this.pMatrix)
   }
 
-  addPerspective () {
-    mat4.perspective(zoom, 1.0, 0.1, 1000, this.pMatrix)
-  }
-
   clearAll () {
     mat4.identity(this.mMatrix)
+  }
+
+  addPerspective () {
+    mat4.perspective(zoom, 1.0, 0.1, 1000, this.pMatrix)
+    for (let i = 0; i < this.translateArray.length; i++) {
+      this.mMatrix = mat4.translate(this.mMatrix, [
+        this.translateArray[i][0],
+        this.translateArray[i][1],
+        this.translateArray[i][2]
+      ])
+    }
   }
 
   rotateX (degrees) {
@@ -45,6 +54,10 @@ class PrimitiveBase {
     )
   }
 
+  translate (translateX, translateY, translateZ) {
+    this.translateArray.push([translateX, translateY, translateZ])
+  }
+
   drawBase (buffer, init) {
     init.gl.bindBuffer(init.gl.ARRAY_BUFFER, buffer.vertex)
     init.gl.vertexAttribPointer(
@@ -61,7 +74,11 @@ class PrimitiveBase {
     init.gl.uniformMatrix4fv(init.uVMatrixLocation, false, this.vMatrix)
     init.gl.uniformMatrix4fv(init.uPMatrixLocation, false, this.pMatrix)
     init.gl.drawElements(
-      init.gl.LINE_LOOP,
+      drawMode === 1
+        ? init.gl.POINTS
+        : drawMode === 2
+        ? init.gl.LINE_LOOP
+        : init.gl.TRIANGLES,
       buffer.index.numItems,
       init.gl.UNSIGNED_SHORT,
       0
