@@ -49,7 +49,7 @@ void main() {
   mat4 projectionModelView;
   projectionModelView=uPMatrix*uVMatrix*uMMatrix;
   gl_Position = projectionModelView*vec4(aPosition,1.0);
-  gl_PointSize=2.0;
+  gl_PointSize=3.0;
 }`
     this.gl.shaderSource(this.vertexShader, this.vertexShaderCode)
     this.gl.compileShader(this.vertexShader)
