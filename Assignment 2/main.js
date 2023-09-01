@@ -21,7 +21,7 @@ const addEventListeners = () => {
   zoom = 100
   zoomSlider = document.getElementById('zoom')
   zoomSlider.addEventListener('input', () => {
-    zoom = 150 - zoomSlider.value
+    zoom = zoomSlider.value
     drawScene()
   })
 }
