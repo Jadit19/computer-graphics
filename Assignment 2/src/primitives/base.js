@@ -74,6 +74,14 @@ class PrimitiveBase {
     this.translateArray.push([translateX, translateY, translateZ])
   }
 
+  translateNow (translateX, translateY, translateZ) {
+    this.mMatrix = mat4.translate(this.mMatrix, [
+      translateX,
+      translateY,
+      translateZ
+    ])
+  }
+
   scale (scaleX, scaleY, scaleZ) {
     this.scaleArray.push([scaleX, scaleY, scaleZ])
   }

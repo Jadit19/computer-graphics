@@ -100,11 +100,23 @@ class Canvas {
     this.init.clear()
 
     for (let i = 0; i < this.objects.length; i++) {
-      this.objects[i].clearAll()
       this.objects[i].rotateY(this.degree0)
       this.objects[i].rotateX(this.degree1)
       this.objects[i].addPerspective()
+
+      if (this.canvasNumber == 2) {
+        if (i == 1) {
+          this.objects[i].translateNow(-1.3, -0.3, 0)
+          this.objects[i].rotateZ(75)
+        } else if (i == 3) {
+          this.objects[i].translateNow(-0.13, 1.6, -0.1)
+          this.objects[i].rotateZ(20)
+          this.objects[i].rotateX(50)
+        }
+      }
+
       this.objects[i].draw(this.buffer, this.init)
+      this.objects[i].clearAll()
     }
   }
 }
