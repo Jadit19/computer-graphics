@@ -1,20 +1,20 @@
 class PrimitiveBase {
   constructor (color) {
     this.color = [color[0] / 255.0, color[1] / 255.0, color[2] / 255.0, 1.0]
-    this.setupMatrix()
-
     this.translateArray = []
     this.scaleArray = []
+
+    this.setupMatrices()
   }
 
-  setupMatrix () {
+  setupMatrices () {
     this.mMatrix = mat4.create()
     mat4.identity(this.mMatrix)
 
     this.vMatrix = mat4.create()
     mat4.identity(this.vMatrix)
     this.vMatrix = mat4.lookAt(
-      [0.0, 0.0, 2.0],
+      [0.0, 0.0, 2.5],
       [0.0, 0.0, 0.0],
       [0.0, 1.0, 0.0],
       this.vMatrix
@@ -24,11 +24,11 @@ class PrimitiveBase {
     mat4.identity(this.pMatrix)
   }
 
-  clearAll () {
+  clear () {
     mat4.identity(this.mMatrix)
   }
 
-  addPerspective () {
+  addVariables () {
     mat4.perspective(zoom, 1.0, 0.1, 1000, this.pMatrix)
     for (let i = 0; i < this.translateArray.length; i++) {
       this.mMatrix = mat4.translate(this.mMatrix, [
@@ -86,29 +86,35 @@ class PrimitiveBase {
     this.scaleArray.push([scaleX, scaleY, scaleZ])
   }
 
-  drawBase (buffer, init) {
-    init.gl.bindBuffer(init.gl.ARRAY_BUFFER, buffer.vertex)
-    init.gl.vertexAttribPointer(
-      init.aPositionLocation,
-      buffer.vertex.itemSize,
-      init.gl.FLOAT,
+  drawBase (buf, shader) {
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, buf.vertex)
+    canvas.gl.vertexAttribPointer(
+      shader.aPositionLocation,
+      buf.vertex.itemSize,
+      canvas.gl.FLOAT,
       false,
       0,
       0
     )
-    init.gl.bindBuffer(init.gl.ELEMENT_ARRAY_BUFFER, buffer.index)
-    init.gl.uniform4fv(init.uColorLocation, this.color)
-    init.gl.uniformMatrix4fv(init.uMMatrixLocation, false, this.mMatrix)
-    init.gl.uniformMatrix4fv(init.uVMatrixLocation, false, this.vMatrix)
-    init.gl.uniformMatrix4fv(init.uPMatrixLocation, false, this.pMatrix)
-    init.gl.drawElements(
-      drawMode === 1
-        ? init.gl.POINTS
-        : drawMode === 2
-        ? init.gl.LINE_LOOP
-        : init.gl.TRIANGLES,
-      buffer.index.numItems,
-      init.gl.UNSIGNED_SHORT,
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, buf.normal)
+    canvas.gl.vertexAttribPointer(
+      shader.aNormalLocation,
+      buf.normal.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, buf.index)
+    canvas.gl.uniform4fv(shader.uColorLocation, this.color)
+    canvas.gl.uniformMatrix4fv(shader.uMMatrixLocation, false, this.mMatrix)
+    canvas.gl.uniformMatrix4fv(shader.uVMatrixLocation, false, this.vMatrix)
+    canvas.gl.uniformMatrix4fv(shader.uPMatrixLocation, false, this.pMatrix)
+    canvas.gl.uniform3fv(shader.uLightLocation, [position, 0.0, 10.0])
+    canvas.gl.drawElements(
+      canvas.gl.TRIANGLES,
+      buf.index.numItems,
+      canvas.gl.UNSIGNED_SHORT,
       0
     )
   }

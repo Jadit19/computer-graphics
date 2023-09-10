@@ -3,7 +3,7 @@ class Cube extends PrimitiveBase {
     super(color)
   }
 
-  draw (buffer, init) {
-    this.drawBase(buffer.cube, init)
+  draw (shader) {
+    this.drawBase(buffer.cube, shader)
   }
 }

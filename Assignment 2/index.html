@@ -8,8 +8,9 @@
     <script type="text/javascript" src="lib/glMatrix.js"></script>
 
     <script type="text/javascript" src="src/canvas.js"></script>
-    <script type="text/javascript" src="src/init.js"></script>
     <script type="text/javascript" src="src/buffer.js"></script>
+    <script type="text/javascript" src="src/viewport.js"></script>
+    <script type="text/javascript" src="src/shader.js"></script>
 
     <script type="text/javascript" src="src/primitives/base.js"></script>
     <script type="text/javascript" src="src/primitives/cube.js"></script>
@@ -18,20 +19,36 @@
     <script type="text/javascript" src="main.js"></script>
   </head>
   <body onload="webGLStart()">
-    <canvas width="600" height="600" id="canvas1"></canvas>
-    <canvas width="600" height="600" id="canvas2"></canvas>
-    <canvas width="600" height="600" id="canvas3"></canvas>
+    <canvas width="1500" height="500" id="canvas"></canvas>
 
-    <br />
-    <br />
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 1500px;
+        margin-bottom: 0;
+      "
+    >
+      <h1 style="width: 500px; display: flex; justify-content: center">
+        Per-Face Shading
+      </h1>
+      <h1 style="width: 500px; display: flex; justify-content: center">
+        Gouraud Shading (Per-Vertex)
+      </h1>
+      <h1 style="width: 500px; display: flex; justify-content: center">
+        Phong Shading (Per-Fragment)
+      </h1>
+    </div>
+
     <label for="position">Control Light Position:</label>
     <input
       type="range"
       id="position"
-      min="0"
-      max="100"
-      step="1"
-      value="50"
+      min="-10"
+      max="10"
+      step="0.01"
+      value="0"
       style="width: 400px"
     />
 
@@ -43,13 +60,8 @@
       min="50"
       max="150"
       step="1"
-      value="100"
+      value="90"
       style="width: 400px"
     />
-
-    <br /><br />
-    <button onclick="changeDrawMode(1)">Points</button>
-    <button onclick="changeDrawMode(2)">Line Loop</button>
-    <button onclick="changeDrawMode(3)">Triangles</button>
   </body>
 </html>

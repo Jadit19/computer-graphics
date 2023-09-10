@@ -1,7 +1,7 @@
+/** @type{Buffer} */
+var buffer
 class Buffer {
-  constructor (gl) {
-    /** @type {WebGLRenderingContext} */
-    this.gl = gl
+  constructor () {
     this.initCube()
     this.initSphere()
   }
@@ -11,10 +11,13 @@ class Buffer {
       vertices: null,
       vertex: null,
       indices: null,
-      index: null
+      index: null,
+      normal: null,
+      normals: null
     }
     this.initCubeLocations()
     this.initCubeIndices()
+    this.initCubeNormals()
   }
 
   initCubeLocations () {
@@ -26,12 +29,12 @@ class Buffer {
       0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5,
       -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5
     ])
-    this.cube.vertex = this.gl.createBuffer()
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.cube.vertex)
-    this.gl.bufferData(
-      this.gl.ARRAY_BUFFER,
+    this.cube.vertex = canvas.gl.createBuffer()
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.cube.vertex)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
       this.cube.vertices,
-      this.gl.STATIC_DRAW
+      canvas.gl.STATIC_DRAW
     )
     this.cube.vertex.itemSize = 3
     this.cube.vertex.numItems = this.cube.vertices.length
@@ -42,15 +45,35 @@ class Buffer {
       0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12,
       14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23
     ])
-    this.cube.index = this.gl.createBuffer()
-    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.cube.index)
-    this.gl.bufferData(
-      this.gl.ELEMENT_ARRAY_BUFFER,
+    this.cube.index = canvas.gl.createBuffer()
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.cube.index)
+    canvas.gl.bufferData(
+      canvas.gl.ELEMENT_ARRAY_BUFFER,
       this.cube.indices,
-      this.gl.STATIC_DRAW
+      canvas.gl.STATIC_DRAW
     )
     this.cube.index.itemSize = 1
     this.cube.index.numItems = this.cube.indices.length
+  }
+
+  initCubeNormals () {
+    this.cube.normals = new Float32Array([
+      0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+      -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0,
+      1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0,
+      0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
+      0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0,
+      0.0, 0.0
+    ])
+    this.cube.normal = canvas.gl.createBuffer()
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.cube.normal)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
+      this.cube.normals,
+      canvas.gl.STATIC_DRAW
+    )
+    this.cube.normal.itemSize = 3
+    this.cube.normal.numItems = this.cube.normals.length / 3
   }
 
   initSphere () {
@@ -58,7 +81,9 @@ class Buffer {
       vertices: null,
       vertex: null,
       indices: null,
-      index: null
+      index: null,
+      normal: null,
+      normals: null
     }
     this.initSphereLocations()
     this.initSphereIndices()
@@ -69,6 +94,7 @@ class Buffer {
     const longitudeBands = 30
     const radius = 0.5
     let array = []
+    let array2 = []
     for (let i = 0; i <= latitudeBands; i++) {
       const theta = (i * Math.PI) / latitudeBands
       const sinTheta = Math.sin(theta)
@@ -83,19 +109,33 @@ class Buffer {
         array.push(radius * x)
         array.push(radius * y)
         array.push(radius * z)
+        array2.push(x)
+        array2.push(y)
+        array2.push(z)
       }
     }
 
     this.sphere.vertices = new Float32Array(array)
-    this.sphere.vertex = this.gl.createBuffer()
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.sphere.vertex)
-    this.gl.bufferData(
-      this.gl.ARRAY_BUFFER,
+    this.sphere.vertex = canvas.gl.createBuffer()
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.sphere.vertex)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
       this.sphere.vertices,
-      this.gl.STATIC_DRAW
+      canvas.gl.STATIC_DRAW
     )
     this.sphere.vertex.itemSize = 3
     this.sphere.vertex.numItems = this.sphere.vertices.length / 3
+
+    this.sphere.normals = new Float32Array(array2)
+    this.sphere.normal = canvas.gl.createBuffer()
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.sphere.normal)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
+      this.sphere.normals,
+      canvas.gl.STATIC_DRAW
+    )
+    this.sphere.normal.itemSize = 3
+    this.sphere.vertex.numItems = this.sphere.normals.length / 3
   }
 
   initSphereIndices () {
@@ -114,12 +154,12 @@ class Buffer {
     }
 
     this.sphere.indices = new Uint16Array(array)
-    this.sphere.index = this.gl.createBuffer()
-    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.sphere.index)
-    this.gl.bufferData(
-      this.gl.ELEMENT_ARRAY_BUFFER,
+    this.sphere.index = canvas.gl.createBuffer()
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.sphere.index)
+    canvas.gl.bufferData(
+      canvas.gl.ELEMENT_ARRAY_BUFFER,
       this.sphere.indices,
-      this.gl.STATIC_DRAW
+      canvas.gl.STATIC_DRAW
     )
     this.sphere.index.itemSize = 1
     this.sphere.index.numItems = this.sphere.indices.length

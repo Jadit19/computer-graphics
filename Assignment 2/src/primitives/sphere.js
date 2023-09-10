@@ -3,7 +3,7 @@ class Sphere extends PrimitiveBase {
     super(color)
   }
 
-  draw (buffer, init) {
-    this.drawBase(buffer.sphere, init)
+  draw (shader) {
+    this.drawBase(buffer.sphere, shader)
   }
 }
