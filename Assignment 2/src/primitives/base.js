@@ -110,7 +110,7 @@ class PrimitiveBase {
     canvas.gl.uniformMatrix4fv(shader.uMMatrixLocation, false, this.mMatrix)
     canvas.gl.uniformMatrix4fv(shader.uVMatrixLocation, false, this.vMatrix)
     canvas.gl.uniformMatrix4fv(shader.uPMatrixLocation, false, this.pMatrix)
-    canvas.gl.uniform3fv(shader.uLightLocation, [position, 0.0, 10.0])
+    canvas.gl.uniform3fv(shader.uLightLocation, [position, 6.0, 10.0])
     canvas.gl.drawElements(
       canvas.gl.TRIANGLES,
       buf.index.numItems,
