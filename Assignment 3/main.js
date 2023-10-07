@@ -358,6 +358,86 @@ const shaders = {
         fragColor = 0.5* vec4(texture(uTextureMap, textureCoord).rgb, 2.0);
         fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
       }`
+  },
+  box: {
+    vertex: `#version 300 es
+      in vec3 aNormal;
+      in vec3 aPosition;
+      
+      uniform mat4 uMMatrix;
+      uniform mat4 uPMatrix;
+      uniform mat4 uVMatrix;
+      
+      out vec3 vModelPosition;
+      out vec3 vModelNormal;
+      out vec3 vWorldPosition;
+      out vec3 vWorldNormal;
+      out vec3 vVertexColor;
+      
+      void main() {
+        vModelPosition = aPosition;
+        vModelNormal = aNormal;
+      
+        vec4 worldPosition = uMMatrix * vec4(aPosition, 1.0);
+        vWorldPosition = vec3(worldPosition);
+        vWorldNormal = normalize(mat3(uMMatrix) * aNormal);
+        vVertexColor = vec3(0.8, 0.8, 0.8);
+        
+        gl_Position = uPMatrix * uVMatrix * worldPosition;
+      }`,
+    fragment: `#version 300 es
+      precision mediump float;
+      
+      const float shininess = 1000.0;
+      const float PI = 3.1415926535897932384626433832795;
+      
+      in vec3 vModelPosition;
+      in vec3 vModelNormal;
+      in vec3 vWorldPosition;
+      in vec3 vWorldNormal;
+      in vec3 vVertexColor;
+      
+      out vec4 fragColor;
+      
+      uniform vec3 uViewOrigin;
+      uniform vec3 uLightDirection;
+      uniform vec3 uAmbientLight;
+      uniform vec3 uDiffuseLight;
+      uniform vec3 uSpecularLight;
+      
+      uniform samplerCube uEnv;
+      
+      void main() {
+        vec3 worldPosition = vWorldPosition;
+        vec3 worldNormal = normalize(vWorldNormal);
+        vec3 modelPosition = vModelPosition;
+      
+        modelPosition.y -= 1.0;
+        modelPosition = normalize(modelPosition);
+        vec3 modelNormal = normalize(vModelNormal);
+      
+        vec2 textureCoord;
+        textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
+        textureCoord.t = 0.5 - 0.5 * modelPosition.y;
+      
+        vec3 tangentBAxis = vec3(0.0,1.0,0.0);
+        tangentBAxis = normalize(tangentBAxis - dot(tangentBAxis, worldNormal) * worldNormal);
+        vec3 tangentTAxis = normalize(cross(tangentBAxis, worldNormal));
+      
+        vec3 normalizedLightDirection = normalize(uLightDirection);
+        vec3 vectorReflection = normalize( reflect(-normalizedLightDirection, worldNormal));
+        vec3 vectorView = normalize(uViewOrigin - worldPosition);
+      
+        float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
+        float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
+      
+        fragColor = vec4(
+          ( uAmbientLight * vVertexColor)
+          + ((uDiffuseLight * vVertexColor) * diffuseLightWeighting)
+          + ( uSpecularLight * specularLightWeighting),
+          1.0 );
+        fragColor += vec4(texture(uEnv, normalize(refract(-vectorView, worldNormal, 0.82))).rgb, 0.0);
+      }`
   }
 }
 
@@ -390,6 +470,9 @@ var tableTop
 
 /** @type {TableLeg} */
 var tableLeg1, tableLeg2, tableLeg3, tableLeg4
+
+/** @type {Box} */
+var box
 
 class Canvas {
   constructor (id) {
@@ -466,7 +549,7 @@ class Shader {
 class Buffer {
   constructor () {
     this.initSphere()
-    this.initTableLeg()
+    this.initCube()
   }
 
   initSphere () {
@@ -542,8 +625,8 @@ class Buffer {
       normalArray.length / this.sphere.normal.itemSize
   }
 
-  initTableLeg () {
-    this.tableLeg = {
+  initCube () {
+    this.cube = {
       position: canvas.gl.createBuffer(),
       index: canvas.gl.createBuffer(),
       normal: canvas.gl.createBuffer()
@@ -557,14 +640,14 @@ class Buffer {
       0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5,
       -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5
     ]
-    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.tableLeg.position)
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.cube.position)
     canvas.gl.bufferData(
       canvas.gl.ARRAY_BUFFER,
       new Float32Array(vertices),
       canvas.gl.STATIC_DRAW
     )
-    this.tableLeg.position.itemSize = 3
-    this.tableLeg.position.numItems = vertices.length / 3
+    this.cube.position.itemSize = 3
+    this.cube.position.numItems = vertices.length / 3
 
     var normals = [
       // Front face
@@ -580,27 +663,27 @@ class Buffer {
       // Left face
       -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0
     ]
-    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.tableLeg.normal)
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.cube.normal)
     canvas.gl.bufferData(
       canvas.gl.ARRAY_BUFFER,
       new Float32Array(normals),
       canvas.gl.STATIC_DRAW
     )
-    this.tableLeg.normal.itemSize = 3
-    this.tableLeg.normal.numItems = normals.length / 3
+    this.cube.normal.itemSize = 3
+    this.cube.normal.numItems = normals.length / 3
 
     var indices = [
       0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12,
       14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23
     ]
-    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.tableLeg.index)
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.cube.index)
     canvas.gl.bufferData(
       canvas.gl.ELEMENT_ARRAY_BUFFER,
       new Uint16Array(indices),
       canvas.gl.STATIC_DRAW
     )
-    this.tableLeg.index.itemSize = 1
-    this.tableLeg.index.numItems = indices.length
+    this.cube.index.itemSize = 1
+    this.cube.index.numItems = indices.length
   }
 }
 
@@ -860,7 +943,6 @@ class Teapot {
 
   initShader () {
     this.shader = new Shader(shaders.teapot)
-
     this.locations = {
       aPosition: canvas.gl.getAttribLocation(this.shader.program, 'aPosition'),
       aNormal: canvas.gl.getAttribLocation(this.shader.program, 'aNormal'),
@@ -1523,7 +1605,7 @@ class TableLeg {
   }
 
   initBuffer () {
-    this.buffer = buffer.tableLeg
+    this.buffer = buffer.cube
   }
 
   initMatrices () {
@@ -1606,6 +1688,124 @@ class TableLeg {
   }
 }
 
+class Box {
+  constructor () {
+    this.init()
+  }
+
+  init () {
+    this.initShader()
+    this.initBuffer()
+    this.initMatrices()
+  }
+
+  initShader () {
+    this.shader = new Shader(shaders.box)
+    this.locations = {
+      aPosition: canvas.gl.getAttribLocation(this.shader.program, 'aPosition'),
+      aNormal: canvas.gl.getAttribLocation(this.shader.program, 'aNormal'),
+      uMMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uMMatrix'),
+      uVMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uVMatrix'),
+      uPMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uPMatrix'),
+      uViewOrigin: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uViewOrigin'
+      ),
+      uLightDirection: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uLightDirection'
+      ),
+      uAmbientLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uAmbientLight'
+      ),
+      uDiffuseLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uDiffuseLight'
+      ),
+      uSpecularLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uSpecularLight'
+      ),
+      uEnv: canvas.gl.getUniformLocation(this.shader.program, 'uEnv')
+    }
+  }
+
+  initBuffer () {
+    this.buffer = buffer.cube
+  }
+
+  initMatrices () {
+    this.mMatrix = mat4.create()
+    mat4.identity(this.mMatrix)
+    this.mMatrix = mat4.translate(this.mMatrix, [-0.35, -0.1, 0.2])
+    mat4.scale(this.mMatrix, [0.15, 0.25, 0.15])
+  }
+
+  draw () {
+    canvas.gl.useProgram(this.shader.program)
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.position)
+    canvas.gl.enableVertexAttribArray(this.locations.aPosition)
+    canvas.gl.vertexAttribPointer(
+      this.locations.aPosition,
+      this.buffer.position.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.normal)
+    canvas.gl.enableVertexAttribArray(this.locations.aNormal)
+    canvas.gl.vertexAttribPointer(
+      this.locations.aNormal,
+      this.buffer.normal.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+
+    canvas.gl.uniformMatrix4fv(this.locations.uMMatrix, false, this.mMatrix)
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uVMatrix,
+      false,
+      globalVars.mvMatrix
+    )
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uPMatrix,
+      false,
+      globalVars.pMatrix
+    )
+    canvas.gl.uniform3fv(this.locations.uViewOrigin, globalVars.viewOrigin)
+    canvas.gl.uniform1i(this.locations.uEnv, 0)
+
+    canvas.gl.uniform3fv(
+      this.locations.uLightDirection,
+      globalVars.lightDirection
+    )
+    canvas.gl.uniform3fv(this.locations.uAmbientLight, globalVars.ambientLight)
+    canvas.gl.uniform3fv(this.locations.uDiffuseLight, globalVars.diffuseLight)
+    canvas.gl.uniform3fv(
+      this.locations.uSpecularLight,
+      globalVars.specularLight
+    )
+
+    canvas.gl.drawElements(
+      canvas.gl.TRIANGLES,
+      this.buffer.index.numItems,
+      canvas.gl.UNSIGNED_SHORT,
+      0
+    )
+
+    canvas.gl.disableVertexAttribArray(this.locations.aPosition)
+    canvas.gl.disableVertexAttribArray(this.locations.aNormal)
+  }
+}
+
 const updateMatrices = () => {
   globalVars.viewAngle += globalVars.viewAngleStep
   globalVars.viewOrigin = [
@@ -1652,6 +1852,7 @@ const initialize = () => {
   tableLeg2 = new TableLeg(2)
   tableLeg3 = new TableLeg(3)
   tableLeg4 = new TableLeg(4)
+  box = new Box()
 }
 
 const drawScene = () => {
@@ -1669,6 +1870,7 @@ const drawScene = () => {
   tableLeg2.draw()
   tableLeg3.draw()
   tableLeg4.draw()
+  box.draw()
 }
 
 const webGLStart = () => {
