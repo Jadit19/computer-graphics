@@ -289,6 +289,75 @@ const shaders = {
         fragColor = 0.5* vec4(texture(uTextureMap, textureCoord).rgb, 2.0);
         fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
       }`
+  },
+  tableLeg: {
+    vertex: `#version 300 es
+      in vec3 aVertexPosition;
+      in vec3 aVertexNormal;
+
+      uniform mat4 uPMatrix;
+      uniform mat4 uMVMatrix;
+      uniform mat4 uModelMatrix;
+
+      out vec3 vModelPosition;
+      out vec3 vModelNormal;
+      out vec3 vWorldPosition;
+      out vec3 vWorldNormal;
+
+      void main() {
+        vModelPosition = aVertexPosition;
+        vModelNormal = aVertexNormal;
+
+        vec4 worldPosition = uModelMatrix * vec4(aVertexPosition, 1.0);
+
+        vWorldPosition = vec3(worldPosition);
+        vWorldNormal = normalize(mat3(uModelMatrix) * aVertexNormal);
+
+        gl_Position = uPMatrix * uMVMatrix * worldPosition;
+      }`,
+    fragment: `#version 300 es
+      precision mediump float;
+
+      const float shininess = 1000.0;
+      const float PI = 3.1415926535897932384626433832795;
+
+      uniform vec3 uViewOrigin;
+      uniform vec3 uLightDirection;
+      uniform vec3 uAmbientLight;
+      uniform vec3 uDiffuseLight;
+      uniform vec3 uSpecularLight;
+      uniform sampler2D uTextureMap;
+
+      uniform samplerCube uEnv;
+      uniform vec3 vVertexColor;
+
+      in vec3 vModelPosition;
+      in vec3 vWorldPosition;
+      in vec3 vWorldNormal;
+
+      out vec4 fragColor;
+      void main() {
+        vec3 worldPosition = vWorldPosition;
+        vec3 worldNormal = normalize(vWorldNormal);
+        vec3 modelPosition = vModelPosition;
+
+        modelPosition.y -= 1.0;
+        modelPosition = normalize(modelPosition);
+
+        vec2 textureCoord = vec2(0.5, 0.5);
+        textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
+        textureCoord.t = 0.5 - 0.5 * modelPosition.y;
+
+        vec3 normalizedLightDirection = normalize(uLightDirection);
+        vec3 vectorReflection = normalize( reflect(-normalizedLightDirection, worldNormal) );
+        vec3 vectorView = normalize( uViewOrigin - worldPosition );
+
+        float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
+        float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
+
+        fragColor = 0.5* vec4(texture(uTextureMap, textureCoord).rgb, 2.0);
+        fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
+      }`
   }
 }
 
@@ -296,7 +365,7 @@ const shaders = {
 var canvas
 
 /** @type {Shader} */
-var sphereShader
+var sphereShader, tableLegShader
 
 /** @type {Buffer} */
 var buffer
@@ -319,6 +388,9 @@ var rubiksCube
 /** @type {TableTop} */
 var tableTop
 
+/** @type {TableLeg} */
+var tableLeg1, tableLeg2, tableLeg3, tableLeg4
+
 class Canvas {
   constructor (id) {
     this.element = document.getElementById(id)
@@ -333,7 +405,6 @@ class Canvas {
       this.gl.viewportWidth = this.element.width
       this.gl.viewportHeight = this.element.height
       this.gl.enable(this.gl.DEPTH_TEST)
-      this.gl.enable(this.gl.CULL_FACE)
       this.gl.clearColor(1.0, 1.0, 1.0, 1.0)
     } catch (e) {
       console.log(e)
@@ -395,6 +466,7 @@ class Shader {
 class Buffer {
   constructor () {
     this.initSphere()
+    this.initTableLeg()
   }
 
   initSphere () {
@@ -468,6 +540,67 @@ class Buffer {
     this.sphere.normal.itemSize = 3
     this.sphere.normal.numItems =
       normalArray.length / this.sphere.normal.itemSize
+  }
+
+  initTableLeg () {
+    this.tableLeg = {
+      position: canvas.gl.createBuffer(),
+      index: canvas.gl.createBuffer(),
+      normal: canvas.gl.createBuffer()
+    }
+
+    var vertices = [
+      -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5,
+      -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5,
+      -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5, -0.5, -0.5, -0.5,
+      0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5,
+      0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5, -0.5, -0.5, 0.5,
+      -0.5, -0.5, 0.5, 0.5, -0.5, -0.5, 0.5
+    ]
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.tableLeg.position)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
+      new Float32Array(vertices),
+      canvas.gl.STATIC_DRAW
+    )
+    this.tableLeg.position.itemSize = 3
+    this.tableLeg.position.numItems = vertices.length / 3
+
+    var normals = [
+      // Front face
+      0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+      // Back face
+      0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0,
+      // Top face
+      0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
+      // Bottom face
+      0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0,
+      // Right face
+      1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+      // Left face
+      -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0
+    ]
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.tableLeg.normal)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
+      new Float32Array(normals),
+      canvas.gl.STATIC_DRAW
+    )
+    this.tableLeg.normal.itemSize = 3
+    this.tableLeg.normal.numItems = normals.length / 3
+
+    var indices = [
+      0, 1, 2, 0, 2, 3, 4, 5, 6, 4, 6, 7, 8, 9, 10, 8, 10, 11, 12, 13, 14, 12,
+      14, 15, 16, 17, 18, 16, 18, 19, 20, 21, 22, 20, 22, 23
+    ]
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.tableLeg.index)
+    canvas.gl.bufferData(
+      canvas.gl.ELEMENT_ARRAY_BUFFER,
+      new Uint16Array(indices),
+      canvas.gl.STATIC_DRAW
+    )
+    this.tableLeg.index.itemSize = 1
+    this.tableLeg.index.numItems = indices.length
   }
 }
 
@@ -1257,7 +1390,7 @@ class TableTop {
     this.mMatrix = mat4.create()
     mat4.identity(this.mMatrix)
     this.mMatrix = mat4.translate(this.mMatrix, [0, -0.3, 0])
-    mat4.scale(this.mMatrix, [0.8, 0.1, 0.6])
+    mat4.scale(this.mMatrix, [0.9, 0.05, 0.6])
   }
 
   draw () {
@@ -1325,6 +1458,154 @@ class TableTop {
   }
 }
 
+class TableLeg {
+  constructor (number) {
+    this.number = number
+
+    this.init()
+  }
+
+  init () {
+    this.initShader()
+    this.initBuffer()
+    this.initMatrices()
+  }
+
+  initShader () {
+    this.shader = tableLegShader
+    this.locations = {
+      aPosition: canvas.gl.getAttribLocation(
+        this.shader.program,
+        'aVertexPosition'
+      ),
+      aNormal: canvas.gl.getAttribLocation(
+        this.shader.program,
+        'aVertexNormal'
+      ),
+      uMMatrix: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uModelMatrix'
+      ),
+      uVMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uMVMatrix'),
+      uPMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uPMatrix'),
+      uViewOrigin: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uViewOrigin'
+      ),
+      uLightDirection: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uLightDirection'
+      ),
+      uAmbientLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uAmbientLight'
+      ),
+      uDiffuseLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uDiffuseLight'
+      ),
+      uSpecularLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uSpecularLight'
+      ),
+      uEnv: canvas.gl.getUniformLocation(this.shader.program, 'uEnv'),
+      vVertexColor: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'vVertexColor'
+      ),
+      uTextureLocation: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uTextureMap'
+      )
+    }
+
+    console.log(this.locations)
+  }
+
+  initBuffer () {
+    this.buffer = buffer.tableLeg
+  }
+
+  initMatrices () {
+    this.mMatrix = mat4.create()
+    mat4.identity(this.mMatrix)
+    if (this.number === 1) {
+      this.mMatrix = mat4.translate(this.mMatrix, [0.5, -0.6, -0.2])
+    } else if (this.number === 2) {
+      this.mMatrix = mat4.translate(this.mMatrix, [-0.5, -0.6, -0.2])
+    } else if (this.number === 3) {
+      this.mMatrix = mat4.translate(this.mMatrix, [-0.5, -0.6, 0.2])
+    } else if (this.number === 4) {
+      this.mMatrix = mat4.translate(this.mMatrix, [0.5, -0.6, 0.2])
+    }
+    mat4.scale(this.mMatrix, [0.1, 0.5, 0.1])
+  }
+
+  draw () {
+    canvas.gl.useProgram(this.shader.program)
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.position)
+    canvas.gl.enableVertexAttribArray(this.locations.aPosition)
+    canvas.gl.vertexAttribPointer(
+      this.locations.aPosition,
+      this.buffer.position.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.normal)
+    canvas.gl.enableVertexAttribArray(this.locations.aNormal)
+    canvas.gl.vertexAttribPointer(
+      this.locations.aNormal,
+      this.buffer.normal.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+
+    canvas.gl.uniformMatrix4fv(this.locations.uMMatrix, false, this.mMatrix)
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uVMatrix,
+      false,
+      globalVars.mvMatrix
+    )
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uPMatrix,
+      false,
+      globalVars.pMatrix
+    )
+    canvas.gl.uniform3fv(this.locations.uViewOrigin, globalVars.viewOrigin)
+    canvas.gl.uniform1i(this.locations.uEnv, 0)
+    canvas.gl.uniform3fv(
+      this.locations.uLightDirection,
+      globalVars.lightDirection
+    )
+    canvas.gl.uniform3fv(this.locations.uAmbientLight, globalVars.ambientLight)
+    canvas.gl.uniform3fv(this.locations.uDiffuseLight, globalVars.diffuseLight)
+    canvas.gl.uniform3fv(
+      this.locations.uSpecularLight,
+      globalVars.specularLight
+    )
+    canvas.gl.uniform3fv(this.locations.vVertexColor, [32, 82, 64])
+    canvas.gl.uniform1i(this.locations.uTextureLocation, 2)
+
+    canvas.gl.drawElements(
+      canvas.gl.TRIANGLES,
+      this.buffer.index.numItems,
+      canvas.gl.UNSIGNED_SHORT,
+      0
+    )
+
+    canvas.gl.disableVertexAttribArray(this.locations.aPosition)
+    canvas.gl.disableVertexAttribArray(this.locations.aNormal)
+  }
+}
+
 const updateMatrices = () => {
   globalVars.viewAngle += globalVars.viewAngleStep
   globalVars.viewOrigin = [
@@ -1366,6 +1647,11 @@ const initialize = () => {
   ball2 = new Ball([52, 66, 125], 2)
   rubiksCube = new RubiksCube('assets/images/rcube.png')
   tableTop = new TableTop()
+  tableLegShader = new Shader(shaders.tableLeg)
+  tableLeg1 = new TableLeg(1)
+  tableLeg2 = new TableLeg(2)
+  tableLeg3 = new TableLeg(3)
+  tableLeg4 = new TableLeg(4)
 }
 
 const drawScene = () => {
@@ -1379,6 +1665,10 @@ const drawScene = () => {
   ball2.draw()
   rubiksCube.draw()
   tableTop.draw()
+  tableLeg1.draw()
+  tableLeg2.draw()
+  tableLeg3.draw()
+  tableLeg4.draw()
 }
 
 const webGLStart = () => {
