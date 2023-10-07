@@ -15,27 +15,84 @@ void main() {
   gl_FragColor = textureCube(uEnv, normalize(vPosition));
 }`
 const teapotVsCode = `#version 300 es
+in vec3 aNormal;
 in vec3 aPosition;
 
 uniform mat4 uMMatrix;
 uniform mat4 uPMatrix;
 uniform mat4 uVMatrix;
 
+out vec3 vModelPosition;
+out vec3 vModelNormal;
+out vec3 vWorldPosition;
+out vec3 vWorldNormal;
+out vec3 vVertexColor;
+
 void main() {
-  mat4 projectionModelView;
-	projectionModelView=uPMatrix*uVMatrix*uMMatrix;
+  vModelPosition = aPosition;
+  vModelNormal = aNormal;
+
+  vec4 worldPosition = uMMatrix * vec4(aPosition, 1.0);
+  vWorldPosition = vec3(worldPosition);
+  vWorldNormal = normalize(mat3(uMMatrix) * aNormal);
+  vVertexColor = vec3(0.8, 0.8, 0.8);
   
-  gl_Position =  projectionModelView * vec4(aPosition,1.0);
-  gl_PointSize=3.0;
+  gl_Position = uPMatrix * uVMatrix * worldPosition;
 }`
 const teapotFsCode = `#version 300 es
 precision mediump float;
 
+const float shininess = 1000.0;
+const float PI = 3.1415926535897932384626433832795;
+
+in vec3 vModelPosition;
+in vec3 vModelNormal;
+in vec3 vWorldPosition;
+in vec3 vWorldNormal;
+in vec3 vVertexColor;
+
 out vec4 fragColor;
+
+uniform vec3 uViewOrigin;
+uniform vec3 uLightDirection;
+uniform vec3 uAmbientLight;
+uniform vec3 uDiffuseLight;
+uniform vec3 uSpecularLight;
+
+uniform samplerCube uEnv;
+
 uniform vec4 diffuseTerm;
 
 void main() {
-  fragColor = diffuseTerm;
+  vec3 worldPosition = vWorldPosition;
+  vec3 worldNormal = normalize(vWorldNormal);
+  vec3 modelPosition = vModelPosition;
+
+  modelPosition.y -= 1.0;
+  modelPosition = normalize(modelPosition);
+  vec3 modelNormal = normalize(vModelNormal);
+
+  vec2 textureCoord;
+  textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
+  textureCoord.t = 0.5 - 0.5 * modelPosition.y;
+
+  vec3 tangentBAxis = vec3(0.0,1.0,0.0);
+  tangentBAxis = normalize(tangentBAxis - dot(tangentBAxis, worldNormal) * worldNormal);
+  vec3 tangentTAxis = normalize(cross(tangentBAxis, worldNormal));
+
+  vec3 normalizedLightDirection = normalize(uLightDirection);
+  vec3 vectorReflection = normalize(reflect(-normalizedLightDirection, worldNormal));
+  vec3 vectorView = normalize(uViewOrigin - worldPosition);
+
+  float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
+  float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
+
+  fragColor = vec4(
+    ( uAmbientLight * vVertexColor)
+    + ((uDiffuseLight * vVertexColor) * diffuseLightWeighting)
+    + ( uSpecularLight * specularLightWeighting),
+    1.0 );
+  fragColor += vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
 }`
 
 /** @type {Canvas} */
@@ -65,6 +122,7 @@ var viewUp = [0.0, 1.0, 0.0]
 var viewLookAt = vec3.create()
 var viewCenter = vec3.create()
 
+var lightDirection = [-Math.cos(degToRad(40)), Math.sin(degToRad(40)), 0.0]
 var ambientLight = [0.08, 0.08, 0.08]
 var diffuseLight = [(0.2 * 253) / 255, (0.2 * 184) / 255, (0.2 * 19) / 255]
 var specularLight = [(1.0 * 253) / 255, (1.0 * 184) / 255, (1.0 * 19) / 255]
@@ -89,7 +147,7 @@ class Canvas {
       this.gl.enable(this.gl.CULL_FACE)
       this.gl.clearColor(1.0, 1.0, 1.0, 1.0)
     } catch (e) {
-      console.log(e)
+      console.error(e)
     } finally {
       if (!this.gl) {
         alert('[ERROR] WebGL initialization failed!')
@@ -374,20 +432,43 @@ class Teapot {
 
     this.locations = {
       aPosition: canvas.gl.getAttribLocation(this.shader.program, 'aPosition'),
+      aNormal: canvas.gl.getAttribLocation(this.shader.program, 'aNormal'),
       uMMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uMMatrix'),
       uVMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uVMatrix'),
       uPMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uPMatrix'),
+      uViewOrigin: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uViewOrigin'
+      ),
+      uLightDirection: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uLightDirection'
+      ),
+      uAmbientLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uAmbientLight'
+      ),
+      uDiffuseLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uDiffuseLight'
+      ),
+      uSpecularLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uSpecularLight'
+      ),
       uDiffuseTerm: canvas.gl.getUniformLocation(
         this.shader.program,
         'diffuseTerm'
-      )
+      ),
+      uEnv: canvas.gl.getUniformLocation(this.shader.program, 'uEnv')
     }
   }
 
   initBuffer () {
     this.buffer = {
       position: canvas.gl.createBuffer(),
-      index: canvas.gl.createBuffer()
+      index: canvas.gl.createBuffer(),
+      normal: canvas.gl.createBuffer()
     }
 
     canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.position)
@@ -408,6 +489,16 @@ class Teapot {
     )
     this.buffer.index.itemSize = 1
     this.buffer.index.numItems = this.indexArray.length
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.normal)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
+      new Float32Array(this.normalArray),
+      canvas.gl.STATIC_DRAW
+    )
+    this.buffer.normal.itemSize = 3
+    this.buffer.normal.numItems =
+      this.normalArray.length / this.buffer.normal.itemSize
   }
 
   initMatrices () {
@@ -418,9 +509,9 @@ class Teapot {
 
   draw () {
     canvas.gl.useProgram(this.shader.program)
-    canvas.gl.enableVertexAttribArray(this.locations.aPosition)
 
     canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.position)
+    canvas.gl.enableVertexAttribArray(this.locations.aPosition)
     canvas.gl.vertexAttribPointer(
       this.locations.aPosition,
       this.buffer.position.itemSize,
@@ -432,10 +523,28 @@ class Teapot {
 
     canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
 
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.normal)
+    canvas.gl.enableVertexAttribArray(this.locations.aNormal)
+    canvas.gl.vertexAttribPointer(
+      this.locations.aNormal,
+      this.buffer.normal.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+
     canvas.gl.uniform4fv(this.locations.uDiffuseTerm, [0.7, 0.2, 0.2, 1.0])
     canvas.gl.uniformMatrix4fv(this.locations.uMMatrix, false, this.mMatrix)
     canvas.gl.uniformMatrix4fv(this.locations.uVMatrix, false, mvMatrix)
     canvas.gl.uniformMatrix4fv(this.locations.uPMatrix, false, pMatrix)
+    canvas.gl.uniform3fv(this.locations.uViewOrigin, viewOrigin)
+    canvas.gl.uniform1i(this.locations.uEnv, 0)
+
+    canvas.gl.uniform3fv(this.locations.uLightDirection, lightDirection)
+    canvas.gl.uniform3fv(this.locations.uAmbientLight, ambientLight)
+    canvas.gl.uniform3fv(this.locations.uDiffuseLight, diffuseLight)
+    canvas.gl.uniform3fv(this.locations.uSpecularLight, specularLight)
 
     canvas.gl.drawElements(
       canvas.gl.TRIANGLES,
@@ -445,6 +554,7 @@ class Teapot {
     )
 
     canvas.gl.disableVertexAttribArray(this.locations.aPosition)
+    canvas.gl.disableVertexAttribArray(this.locations.aNormal)
   }
 }
 
