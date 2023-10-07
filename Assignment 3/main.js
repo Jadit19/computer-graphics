@@ -169,6 +169,23 @@ void main() {
     1.0 );
   fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
 }`
+const rubikCubeVsCode = `
+attribute vec3 aVertexPosition;
+uniform mat4 uPMatrix;
+uniform mat4 uMVMatrix; 
+uniform mat4 uMMatrix;
+varying vec3 vPosition;
+void main() {
+  gl_Position = uPMatrix * uMVMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
+  vPosition= aVertexPosition;   
+}`
+const rubikCubeFsCode = `
+precision mediump float;
+uniform samplerCube uEnv;
+varying vec3 vPosition;
+void main() {
+  gl_FragColor = textureCube(uEnv, normalize(vPosition));
+}`
 
 /** @type {Canvas} */
 var canvas
@@ -181,6 +198,9 @@ var teapot
 
 /** @type {Sphere} */
 var sphere1, sphere2
+
+/** @type {RubikCube} */
+var rubikCube
 
 function degToRad (d) {
   return (d * Math.PI) / 180
@@ -770,7 +790,7 @@ class Sphere {
       this.mMatrix = mat4.translate(this.mMatrix, [0, -0.06, 0.35])
       mat4.scale(this.mMatrix, [0.1, 0.1, 0.1])
     } else {
-      this.mMatrix = mat4.translate(this.mMatrix, [0.2, -0.1, 0.2])
+      this.mMatrix = mat4.translate(this.mMatrix, [0.3, -0.11, 0.1])
       mat4.scale(this.mMatrix, [0.05, 0.05, 0.05])
     }
   }
@@ -826,6 +846,204 @@ class Sphere {
   }
 }
 
+class RubikCube {
+  constructor (imagePath) {
+    this.imagePath = imagePath
+    this.size = 0.4
+
+    this.init()
+  }
+
+  init () {
+    this.initShape()
+    this.initTexture()
+    this.initShader()
+    this.initBuffer()
+    this.initMatrices()
+  }
+
+  initShape () {
+    this.positionArray = []
+    var sizes = [-this.size, this.size]
+    for (var z in sizes) {
+      for (var y in sizes) {
+        for (var x in sizes) {
+          this.positionArray.push(sizes[x])
+          this.positionArray.push(sizes[y])
+          this.positionArray.push(sizes[z])
+        }
+      }
+    }
+
+    this.indexArray = [
+      //
+      0, 2, 1, 2, 3, 1,
+      //
+      4, 5, 6, 6, 5, 7,
+      //
+      0, 1, 4, 4, 1, 5,
+      //
+      2, 6, 3, 6, 7, 3,
+      //
+      0, 4, 2, 2, 4, 6,
+      //
+      1, 3, 5, 3, 7, 5
+    ]
+  }
+
+  initTexture () {
+    this.texture = canvas.gl.createTexture()
+    canvas.gl.activeTexture(canvas.gl.TEXTURE1)
+    canvas.gl.bindTexture(canvas.gl.TEXTURE_CUBE_MAP, this.texture)
+    canvas.gl.texParameteri(
+      canvas.gl.TEXTURE_CUBE_MAP,
+      canvas.gl.TEXTURE_MAG_FILTER,
+      canvas.gl.LINEAR
+    )
+    canvas.gl.texParameteri(
+      canvas.gl.TEXTURE_CUBE_MAP,
+      canvas.gl.TEXTURE_MIN_FILTER,
+      canvas.gl.LINEAR_MIPMAP_LINEAR
+    )
+
+    this.loadCubeMap(
+      canvas.gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+      this.texture,
+      this.imagePath
+    )
+    this.loadCubeMap(
+      canvas.gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+      this.texture,
+      this.imagePath
+    )
+    this.loadCubeMap(
+      canvas.gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+      this.texture,
+      this.imagePath
+    )
+    this.loadCubeMap(
+      canvas.gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+      this.texture,
+      this.imagePath
+    )
+    this.loadCubeMap(
+      canvas.gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+      this.texture,
+      this.imagePath
+    )
+    this.loadCubeMap(
+      canvas.gl.TEXTURE_CUBE_MAP_NEGATIVE_Z,
+      this.texture,
+      this.imagePath,
+      () => {
+        canvas.gl.generateMipmap(canvas.gl.TEXTURE_CUBE_MAP)
+      }
+    )
+  }
+
+  loadCubeMap (target, texture, url, callback) {
+    var image = new Image()
+    image.src = url
+    image.addEventListener('load', () => {
+      canvas.gl.activeTexture(canvas.gl.TEXTURE1)
+      canvas.gl.texImage2D(
+        target,
+        0,
+        canvas.gl.RGBA,
+        canvas.gl.RGBA,
+        canvas.gl.UNSIGNED_BYTE,
+        image
+      )
+      if (callback) {
+        callback()
+      }
+    })
+  }
+
+  initShader () {
+    this.shader = new Shader(rubikCubeVsCode, rubikCubeFsCode)
+
+    this.locations = {
+      aVertexPosition: canvas.gl.getAttribLocation(
+        this.shader.program,
+        'aVertexPosition'
+      ),
+      uPMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uPMatrix'),
+      uMVMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uMVMatrix'),
+      uMMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uMMatrix'),
+      uEnv: canvas.gl.getUniformLocation(this.shader.program, 'uEnv')
+    }
+  }
+
+  initBuffer () {
+    this.buffer = {
+      position: canvas.gl.createBuffer(),
+      index: canvas.gl.createBuffer()
+    }
+
+    this.buffer.position.itemSize = 3
+    this.buffer.position.numItems =
+      this.positionArray.length / this.buffer.position.itemSize
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.position)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
+      new Float32Array(this.positionArray),
+      canvas.gl.STATIC_DRAW
+    )
+
+    this.buffer.index.itemSize = 1
+    this.buffer.index.numItems =
+      this.indexArray.length / this.buffer.index.itemSize
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
+    canvas.gl.bufferData(
+      canvas.gl.ELEMENT_ARRAY_BUFFER,
+      new Int16Array(this.indexArray),
+      canvas.gl.STATIC_DRAW
+    )
+  }
+
+  initMatrices () {
+    this.modelMatrix = mat4.create()
+    mat4.identity(this.modelMatrix)
+    mat4.translate(this.modelMatrix, [0.3, -0.1, 0.3])
+    mat4.scale(this.modelMatrix, [0.15, 0.15, 0.15])
+  }
+
+  draw () {
+    canvas.gl.useProgram(this.shader.program)
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.position)
+    canvas.gl.enableVertexAttribArray(this.locations.aVertexPosition)
+    canvas.gl.vertexAttribPointer(
+      this.locations.aVertexPosition,
+      this.buffer.position.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
+
+    canvas.gl.uniformMatrix4fv(this.locations.uPMatrix, false, pMatrix)
+    canvas.gl.uniformMatrix4fv(this.locations.uMVMatrix, false, mvMatrix)
+    canvas.gl.uniformMatrix4fv(this.locations.uMMatrix, false, this.modelMatrix)
+    canvas.gl.uniform1i(this.locations.uEnv, 1)
+
+    canvas.gl.activeTexture(canvas.gl.TEXTURE1)
+    canvas.gl.bindTexture(canvas.gl.TEXTURE_CUBE_MAP, this.texture)
+
+    canvas.gl.drawElements(
+      canvas.gl.TRIANGLES,
+      this.buffer.index.numItems,
+      canvas.gl.UNSIGNED_SHORT,
+      0
+    )
+
+    canvas.gl.disableVertexAttribArray(this.locations.aVertexPosition)
+  }
+}
+
 const updateMatrices = () => {
   viewAngle += viewAngleStep
   viewOrigin = [
@@ -852,6 +1070,7 @@ const initialize = () => {
   teapot = new Teapot('assets/meshes/teapot.json')
   sphere1 = new Sphere([32, 82, 64], 1)
   sphere2 = new Sphere([52, 66, 125], 2)
+  rubikCube = new RubikCube('assets/images/rcube.png')
 }
 
 const drawScene = () => {
@@ -863,6 +1082,7 @@ const drawScene = () => {
   teapot.draw()
   sphere1.draw()
   sphere2.draw()
+  rubikCube.draw()
 }
 
 const webGLStart = () => {
