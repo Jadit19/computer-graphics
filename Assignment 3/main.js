@@ -213,6 +213,82 @@ const shaders = {
       void main() {
         gl_FragColor = textureCube(uEnv, normalize(vPosition));
       }`
+  },
+  tableTop: {
+    vertex: `#version 300 es
+      in vec3 aVertexPosition;
+      in vec3 aVertexNormal;
+
+      uniform mat4 uPMatrix;
+      uniform mat4 uVMatrix;
+      uniform mat4 uModelMatrix;
+
+      out vec3 vModelPosition;
+      out vec3 vModelNormal;
+      out vec3 vWorldPosition;
+      out vec3 vWorldNormal;
+
+      void main() {
+        vModelPosition = aVertexPosition;
+        vModelNormal = aVertexNormal;
+
+        vec4 worldPosition = uModelMatrix * vec4(aVertexPosition, 1.0);
+
+        vWorldPosition = vec3(worldPosition);
+        vWorldNormal = normalize(mat3(uModelMatrix) * aVertexNormal);
+
+        gl_Position = uPMatrix * uVMatrix * worldPosition;
+      }`,
+    fragment: `#version 300 es
+      precision mediump float;
+      
+      const float shininess = 1000.0;
+      const float PI = 3.1415926535897932384626433832795;
+      
+      in vec3 vModelPosition;
+      in vec3 vModelNormal;
+      in vec3 vWorldPosition;
+      in vec3 vWorldNormal;
+      uniform vec3 vVertexColor;
+      
+      out vec4 fragColor;
+      
+      uniform vec3 uViewOrigin;
+      uniform vec3 uLightDirection;
+      uniform vec3 uAmbientLight;
+      uniform vec3 uDiffuseLight;
+      uniform vec3 uSpecularLight;
+      
+      uniform samplerCube uEnv;
+      uniform sampler2D uTextureMap;
+      
+      void main() {
+        vec3 worldPosition = vWorldPosition;
+        vec3 worldNormal = normalize(vWorldNormal);
+        vec3 modelPosition = vModelPosition;
+      
+        modelPosition.y -= 1.0;
+        modelPosition = normalize(modelPosition);
+        vec3 modelNormal = normalize(vModelNormal);
+      
+        vec2 textureCoord;
+        textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
+        textureCoord.t = 0.5 - 0.5 * modelPosition.y;
+      
+        vec3 tangentBAxis = vec3(0.0,1.0,0.0);
+        tangentBAxis = normalize(tangentBAxis - dot(tangentBAxis, worldNormal) * worldNormal);
+        vec3 tangentTAxis = normalize(cross(tangentBAxis, worldNormal));
+      
+        vec3 normalizedLightDirection = normalize(uLightDirection);
+        vec3 vectorReflection = normalize(reflect(-normalizedLightDirection, worldNormal));
+        vec3 vectorView = normalize(uViewOrigin - worldPosition);
+      
+        float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
+        float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
+      
+        fragColor = 0.5* vec4(texture(uTextureMap, textureCoord).rgb, 2.0);
+        fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
+      }`
   }
 }
 
@@ -225,17 +301,23 @@ var sphereShader
 /** @type {Buffer} */
 var buffer
 
+/** @type {Texture} */
+var texture
+
 /** @type {Skybox} */
 var skybox
 
 /** @type {Teapot} */
 var teapot
 
-/** @type {Sphere} */
-var sphere1, sphere2
+/** @type {Ball} */
+var ball1, ball2
 
 /** @type {RubiksCube} */
 var rubiksCube
+
+/** @type {TableTop} */
+var tableTop
 
 class Canvas {
   constructor (id) {
@@ -386,6 +468,43 @@ class Buffer {
     this.sphere.normal.itemSize = 3
     this.sphere.normal.numItems =
       normalArray.length / this.sphere.normal.itemSize
+  }
+}
+
+class Texture {
+  constructor () {
+    this.initTable()
+  }
+
+  initTable () {
+    this.table = canvas.gl.createTexture()
+    canvas.gl.activeTexture(canvas.gl.TEXTURE2)
+
+    var image = new Image()
+    image.src = 'assets/images/wood_texture.jpg'
+    image.onload = () => {
+      canvas.gl.activeTexture(canvas.gl.TEXTURE2)
+      canvas.gl.bindTexture(canvas.gl.TEXTURE_2D, this.table)
+      canvas.gl.texImage2D(
+        canvas.gl.TEXTURE_2D,
+        0,
+        canvas.gl.RGB,
+        canvas.gl.RGB,
+        canvas.gl.UNSIGNED_BYTE,
+        image
+      )
+      canvas.gl.generateMipmap(canvas.gl.TEXTURE_2D)
+      canvas.gl.texParameteri(
+        canvas.gl.TEXTURE_2D,
+        canvas.gl.TEXTURE_MAG_FILTER,
+        canvas.gl.LINEAR
+      )
+      canvas.gl.texParameteri(
+        canvas.gl.TEXTURE_2D,
+        canvas.gl.TEXTURE_MIN_FILTER,
+        canvas.gl.LINEAR_MIPMAP_LINEAR
+      )
+    }
   }
 }
 
@@ -746,7 +865,7 @@ class Teapot {
   }
 }
 
-class Sphere {
+class Ball {
   constructor (color, number) {
     this.color = [color[0] / 255, color[1] / 255, color[2] / 255]
     this.number = number
@@ -1070,6 +1189,142 @@ class RubiksCube {
   }
 }
 
+class TableTop {
+  constructor () {
+    this.init()
+  }
+
+  init () {
+    this.initShader()
+    this.initBuffer()
+    this.initMatrices()
+  }
+
+  initShader () {
+    this.shader = new Shader(shaders.tableTop)
+    this.locations = {
+      aPosition: canvas.gl.getAttribLocation(
+        this.shader.program,
+        'aVertexPosition'
+      ),
+      aNormal: canvas.gl.getAttribLocation(
+        this.shader.program,
+        'aVertexNormal'
+      ),
+      uMMatrix: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uModelMatrix'
+      ),
+      uVMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uVMatrix'),
+      uPMatrix: canvas.gl.getUniformLocation(this.shader.program, 'uPMatrix'),
+      uViewOrigin: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uViewOrigin'
+      ),
+      uLightDirection: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uLightDirection'
+      ),
+      uAmbientLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uAmbientLight'
+      ),
+      uDiffuseLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uDiffuseLight'
+      ),
+      uSpecularLight: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uSpecularLight'
+      ),
+      uEnv: canvas.gl.getUniformLocation(this.shader.program, 'uEnv'),
+      vVertexColor: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'vVertexColor'
+      ),
+      uTextureLocation: canvas.gl.getUniformLocation(
+        this.shader.program,
+        'uTextureMap'
+      )
+    }
+  }
+
+  initBuffer () {
+    this.buffer = buffer.sphere
+  }
+
+  initMatrices () {
+    this.mMatrix = mat4.create()
+    mat4.identity(this.mMatrix)
+    this.mMatrix = mat4.translate(this.mMatrix, [0, -0.3, 0])
+    mat4.scale(this.mMatrix, [0.8, 0.1, 0.6])
+  }
+
+  draw () {
+    canvas.gl.useProgram(this.shader.program)
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.position)
+    canvas.gl.enableVertexAttribArray(this.locations.aPosition)
+    canvas.gl.vertexAttribPointer(
+      this.locations.aPosition,
+      this.buffer.position.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.normal)
+    canvas.gl.enableVertexAttribArray(this.locations.aNormal)
+    canvas.gl.vertexAttribPointer(
+      this.locations.aNormal,
+      this.buffer.normal.itemSize,
+      canvas.gl.FLOAT,
+      false,
+      0,
+      0
+    )
+
+    canvas.gl.uniformMatrix4fv(this.locations.uMMatrix, false, this.mMatrix)
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uVMatrix,
+      false,
+      globalVars.mvMatrix
+    )
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uPMatrix,
+      false,
+      globalVars.pMatrix
+    )
+    canvas.gl.uniform3fv(this.locations.uViewOrigin, globalVars.viewOrigin)
+    canvas.gl.uniform1i(this.locations.uEnv, 0)
+    canvas.gl.uniform3fv(
+      this.locations.uLightDirection,
+      globalVars.lightDirection
+    )
+    canvas.gl.uniform3fv(this.locations.uAmbientLight, globalVars.ambientLight)
+    canvas.gl.uniform3fv(this.locations.uDiffuseLight, globalVars.diffuseLight)
+    canvas.gl.uniform3fv(
+      this.locations.uSpecularLight,
+      globalVars.specularLight
+    )
+    canvas.gl.uniform3fv(this.locations.vVertexColor, [52, 66, 125])
+    canvas.gl.uniform1i(this.locations.uTextureLocation, 2)
+
+    canvas.gl.drawElements(
+      canvas.gl.TRIANGLES,
+      this.buffer.index.numItems,
+      canvas.gl.UNSIGNED_INT,
+      0
+    )
+
+    canvas.gl.disableVertexAttribArray(this.locations.aPosition)
+    canvas.gl.disableVertexAttribArray(this.locations.aNormal)
+  }
+}
+
 const updateMatrices = () => {
   globalVars.viewAngle += globalVars.viewAngleStep
   globalVars.viewOrigin = [
@@ -1093,6 +1348,7 @@ const updateMatrices = () => {
 const initialize = () => {
   canvas = new Canvas('canvas')
   buffer = new Buffer()
+  texture = new Texture()
   mat4.identity(globalVars.pMatrix)
   mat4.perspective(
     50,
@@ -1106,9 +1362,10 @@ const initialize = () => {
   teapot = new Teapot('assets/meshes/teapot.json')
 
   sphereShader = new Shader(shaders.sphere)
-  sphere1 = new Sphere([32, 82, 64], 1)
-  sphere2 = new Sphere([52, 66, 125], 2)
+  ball1 = new Ball([32, 82, 64], 1)
+  ball2 = new Ball([52, 66, 125], 2)
   rubiksCube = new RubiksCube('assets/images/rcube.png')
+  tableTop = new TableTop()
 }
 
 const drawScene = () => {
@@ -1118,9 +1375,10 @@ const drawScene = () => {
   canvas.clear()
   skybox.draw()
   teapot.draw()
-  sphere1.draw()
-  sphere2.draw()
+  ball1.draw()
+  ball2.draw()
   rubiksCube.draw()
+  tableTop.draw()
 }
 
 const webGLStart = () => {
