@@ -1,194 +1,229 @@
-const skyboxVsCode = `
-attribute vec3 aVertexPosition;
-uniform mat4 uPMatrix;
-uniform mat4 uMVMatrix; 
-varying vec3 vPosition;
-void main() {
-  gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
-  vPosition= aVertexPosition;   
-}`
-const skyboxFsCode = `
-precision mediump float;
-uniform samplerCube uEnv;
-varying vec3 vPosition;
-void main() {
-  gl_FragColor = textureCube(uEnv, normalize(vPosition));
-}`
-const teapotVsCode = `#version 300 es
-in vec3 aNormal;
-in vec3 aPosition;
+function degToRad (d) {
+  return (d * Math.PI) / 180
+}
 
-uniform mat4 uMMatrix;
-uniform mat4 uPMatrix;
-uniform mat4 uVMatrix;
+const globalVars = {
+  viewOrigin: [2.0, 1.0, 0.0],
+  viewAngle: 0,
+  viewAngleStep: degToRad(0.2),
+  viewUp: [0.0, 1.0, 0.0],
+  viewLookAt: vec3.create(),
+  viewCenter: vec3.create(),
+  pMatrix: mat4.create(),
+  mvMatrix: mat4.create(),
+  lightDirection: [-Math.cos(degToRad(40)), Math.sin(degToRad(40)), 0.0],
+  ambientLight: [0.08, 0.08, 0.08],
+  diffuseLight: [(0.2 * 253) / 255, (0.2 * 184) / 255, (0.2 * 19) / 255],
+  specularLight: [(1.0 * 253) / 255, (1.0 * 184) / 255, (1.0 * 19) / 255]
+}
 
-out vec3 vModelPosition;
-out vec3 vModelNormal;
-out vec3 vWorldPosition;
-out vec3 vWorldNormal;
-out vec3 vVertexColor;
-
-void main() {
-  vModelPosition = aPosition;
-  vModelNormal = aNormal;
-
-  vec4 worldPosition = uMMatrix * vec4(aPosition, 1.0);
-  vWorldPosition = vec3(worldPosition);
-  vWorldNormal = normalize(mat3(uMMatrix) * aNormal);
-  vVertexColor = vec3(0.8, 0.8, 0.8);
-  
-  gl_Position = uPMatrix * uVMatrix * worldPosition;
-}`
-const teapotFsCode = `#version 300 es
-precision mediump float;
-
-const float shininess = 1000.0;
-const float PI = 3.1415926535897932384626433832795;
-
-in vec3 vModelPosition;
-in vec3 vModelNormal;
-in vec3 vWorldPosition;
-in vec3 vWorldNormal;
-in vec3 vVertexColor;
-
-out vec4 fragColor;
-
-uniform vec3 uViewOrigin;
-uniform vec3 uLightDirection;
-uniform vec3 uAmbientLight;
-uniform vec3 uDiffuseLight;
-uniform vec3 uSpecularLight;
-
-uniform samplerCube uEnv;
-
-void main() {
-  vec3 worldPosition = vWorldPosition;
-  vec3 worldNormal = normalize(vWorldNormal);
-  vec3 modelPosition = vModelPosition;
-
-  modelPosition.y -= 1.0;
-  modelPosition = normalize(modelPosition);
-  vec3 modelNormal = normalize(vModelNormal);
-
-  vec2 textureCoord;
-  textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
-  textureCoord.t = 0.5 - 0.5 * modelPosition.y;
-
-  vec3 tangentBAxis = vec3(0.0,1.0,0.0);
-  tangentBAxis = normalize(tangentBAxis - dot(tangentBAxis, worldNormal) * worldNormal);
-  vec3 tangentTAxis = normalize(cross(tangentBAxis, worldNormal));
-
-  vec3 normalizedLightDirection = normalize(uLightDirection);
-  vec3 vectorReflection = normalize(reflect(-normalizedLightDirection, worldNormal));
-  vec3 vectorView = normalize(uViewOrigin - worldPosition);
-
-  float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
-  float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
-
-  fragColor = vec4(
-    ( uAmbientLight * vVertexColor)
-    + ((uDiffuseLight * vVertexColor) * diffuseLightWeighting)
-    + ( uSpecularLight * specularLightWeighting),
-    1.0 );
-  fragColor += vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
-}`
-const sphereVsCode = `#version 300 es
-in vec3 aNormal;
-in vec3 aPosition;
-
-uniform mat4 uMMatrix;
-uniform mat4 uPMatrix;
-uniform mat4 uVMatrix;
-
-out vec3 vModelPosition;
-out vec3 vModelNormal;
-out vec3 vWorldPosition;
-out vec3 vWorldNormal;
-
-void main() {
-  vModelPosition = aPosition;
-  vModelNormal = aNormal;
-
-  vec4 worldPosition = uMMatrix * vec4(aPosition, 1.0);
-
-  vWorldPosition = vec3(worldPosition);
-  vWorldNormal = normalize(mat3(uMMatrix) * aNormal);
-
-  gl_Position = uPMatrix * uVMatrix * worldPosition;
-}`
-const sphereFsCode = `#version 300 es
-precision mediump float;
-
-const float shininess = 1000.0;
-const float PI = 3.1415926535897932384626433832795;
-
-in vec3 vModelPosition;
-in vec3 vModelNormal;
-in vec3 vWorldPosition;
-in vec3 vWorldNormal;
-uniform vec3 vVertexColor;
-
-out vec4 fragColor;
-
-uniform vec3 uViewOrigin;
-uniform vec3 uLightDirection;
-uniform vec3 uAmbientLight;
-uniform vec3 uDiffuseLight;
-uniform vec3 uSpecularLight;
-
-uniform samplerCube uEnv;
-
-void main() {
-  vec3 worldPosition = vWorldPosition;
-  vec3 worldNormal = normalize(vWorldNormal);
-  vec3 modelPosition = vModelPosition;
-
-  modelPosition.y -= 1.0;
-  modelPosition = normalize(modelPosition);
-  vec3 modelNormal = normalize(vModelNormal);
-
-  vec2 textureCoord;
-  textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
-  textureCoord.t = 0.5 - 0.5 * modelPosition.y;
-
-  vec3 tangentBAxis = vec3(0.0,1.0,0.0);
-  tangentBAxis = normalize(tangentBAxis - dot(tangentBAxis, worldNormal) * worldNormal);
-  vec3 tangentTAxis = normalize(cross(tangentBAxis, worldNormal));
-
-  vec3 normalizedLightDirection = normalize(uLightDirection);
-  vec3 vectorReflection = normalize(reflect(-normalizedLightDirection, worldNormal));
-  vec3 vectorView = normalize(uViewOrigin - worldPosition);
-
-  float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
-  float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
-
-  fragColor = vec4(
-    (8.0 * uAmbientLight * vVertexColor)
-    + ((uDiffuseLight * vVertexColor) * diffuseLightWeighting)
-    + ( uSpecularLight * specularLightWeighting),
-    1.0 );
-  fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
-}`
-const rubikCubeVsCode = `
-attribute vec3 aVertexPosition;
-uniform mat4 uPMatrix;
-uniform mat4 uMVMatrix; 
-uniform mat4 uMMatrix;
-varying vec3 vPosition;
-void main() {
-  gl_Position = uPMatrix * uMVMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
-  vPosition= aVertexPosition;   
-}`
-const rubikCubeFsCode = `
-precision mediump float;
-uniform samplerCube uEnv;
-varying vec3 vPosition;
-void main() {
-  gl_FragColor = textureCube(uEnv, normalize(vPosition));
-}`
+const shaders = {
+  skybox: {
+    vertex: `
+      attribute vec3 aVertexPosition;
+      uniform mat4 uPMatrix;
+      uniform mat4 uMVMatrix; 
+      varying vec3 vPosition;
+      void main() {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vPosition= aVertexPosition;   
+      }`,
+    fragment: `
+      precision mediump float;
+      uniform samplerCube uEnv;
+      varying vec3 vPosition;
+      void main() {
+        gl_FragColor = textureCube(uEnv, normalize(vPosition));
+      }`
+  },
+  teapot: {
+    vertex: `#version 300 es
+      in vec3 aNormal;
+      in vec3 aPosition;
+      
+      uniform mat4 uMMatrix;
+      uniform mat4 uPMatrix;
+      uniform mat4 uVMatrix;
+      
+      out vec3 vModelPosition;
+      out vec3 vModelNormal;
+      out vec3 vWorldPosition;
+      out vec3 vWorldNormal;
+      out vec3 vVertexColor;
+      
+      void main() {
+        vModelPosition = aPosition;
+        vModelNormal = aNormal;
+      
+        vec4 worldPosition = uMMatrix * vec4(aPosition, 1.0);
+        vWorldPosition = vec3(worldPosition);
+        vWorldNormal = normalize(mat3(uMMatrix) * aNormal);
+        vVertexColor = vec3(0.8, 0.8, 0.8);
+        
+        gl_Position = uPMatrix * uVMatrix * worldPosition;
+      }`,
+    fragment: `#version 300 es
+      precision mediump float;
+      
+      const float shininess = 1000.0;
+      const float PI = 3.1415926535897932384626433832795;
+      
+      in vec3 vModelPosition;
+      in vec3 vModelNormal;
+      in vec3 vWorldPosition;
+      in vec3 vWorldNormal;
+      in vec3 vVertexColor;
+      
+      out vec4 fragColor;
+      
+      uniform vec3 uViewOrigin;
+      uniform vec3 uLightDirection;
+      uniform vec3 uAmbientLight;
+      uniform vec3 uDiffuseLight;
+      uniform vec3 uSpecularLight;
+      
+      uniform samplerCube uEnv;
+      
+      void main() {
+        vec3 worldPosition = vWorldPosition;
+        vec3 worldNormal = normalize(vWorldNormal);
+        vec3 modelPosition = vModelPosition;
+      
+        modelPosition.y -= 1.0;
+        modelPosition = normalize(modelPosition);
+        vec3 modelNormal = normalize(vModelNormal);
+      
+        vec2 textureCoord;
+        textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
+        textureCoord.t = 0.5 - 0.5 * modelPosition.y;
+      
+        vec3 tangentBAxis = vec3(0.0,1.0,0.0);
+        tangentBAxis = normalize(tangentBAxis - dot(tangentBAxis, worldNormal) * worldNormal);
+        vec3 tangentTAxis = normalize(cross(tangentBAxis, worldNormal));
+      
+        vec3 normalizedLightDirection = normalize(uLightDirection);
+        vec3 vectorReflection = normalize(reflect(-normalizedLightDirection, worldNormal));
+        vec3 vectorView = normalize(uViewOrigin - worldPosition);
+      
+        float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
+        float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
+      
+        fragColor = vec4(
+          ( uAmbientLight * vVertexColor)
+          + ((uDiffuseLight * vVertexColor) * diffuseLightWeighting)
+          + ( uSpecularLight * specularLightWeighting),
+          1.0 );
+        fragColor += vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
+      }`
+  },
+  sphere: {
+    vertex: `#version 300 es
+      in vec3 aNormal;
+      in vec3 aPosition;
+      
+      uniform mat4 uMMatrix;
+      uniform mat4 uPMatrix;
+      uniform mat4 uVMatrix;
+      
+      out vec3 vModelPosition;
+      out vec3 vModelNormal;
+      out vec3 vWorldPosition;
+      out vec3 vWorldNormal;
+      
+      void main() {
+        vModelPosition = aPosition;
+        vModelNormal = aNormal;
+      
+        vec4 worldPosition = uMMatrix * vec4(aPosition, 1.0);
+      
+        vWorldPosition = vec3(worldPosition);
+        vWorldNormal = normalize(mat3(uMMatrix) * aNormal);
+      
+        gl_Position = uPMatrix * uVMatrix * worldPosition;
+      }`,
+    fragment: `#version 300 es
+      precision mediump float;
+      
+      const float shininess = 1000.0;
+      const float PI = 3.1415926535897932384626433832795;
+      
+      in vec3 vModelPosition;
+      in vec3 vModelNormal;
+      in vec3 vWorldPosition;
+      in vec3 vWorldNormal;
+      uniform vec3 vVertexColor;
+      
+      out vec4 fragColor;
+      
+      uniform vec3 uViewOrigin;
+      uniform vec3 uLightDirection;
+      uniform vec3 uAmbientLight;
+      uniform vec3 uDiffuseLight;
+      uniform vec3 uSpecularLight;
+      
+      uniform samplerCube uEnv;
+      
+      void main() {
+        vec3 worldPosition = vWorldPosition;
+        vec3 worldNormal = normalize(vWorldNormal);
+        vec3 modelPosition = vModelPosition;
+      
+        modelPosition.y -= 1.0;
+        modelPosition = normalize(modelPosition);
+        vec3 modelNormal = normalize(vModelNormal);
+      
+        vec2 textureCoord;
+        textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
+        textureCoord.t = 0.5 - 0.5 * modelPosition.y;
+      
+        vec3 tangentBAxis = vec3(0.0,1.0,0.0);
+        tangentBAxis = normalize(tangentBAxis - dot(tangentBAxis, worldNormal) * worldNormal);
+        vec3 tangentTAxis = normalize(cross(tangentBAxis, worldNormal));
+      
+        vec3 normalizedLightDirection = normalize(uLightDirection);
+        vec3 vectorReflection = normalize(reflect(-normalizedLightDirection, worldNormal));
+        vec3 vectorView = normalize(uViewOrigin - worldPosition);
+      
+        float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
+        float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
+      
+        fragColor = vec4(
+          (8.0 * uAmbientLight * vVertexColor)
+          + ((uDiffuseLight * vVertexColor) * diffuseLightWeighting)
+          + ( uSpecularLight * specularLightWeighting),
+          1.0 );
+        fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
+      }`
+  },
+  rubiksCube: {
+    vertex: `
+      attribute vec3 aVertexPosition;
+      uniform mat4 uPMatrix;
+      uniform mat4 uMVMatrix; 
+      uniform mat4 uMMatrix;
+      varying vec3 vPosition;
+      void main() {
+        gl_Position = uPMatrix * uMVMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
+        vPosition= aVertexPosition;   
+      }`,
+    fragment: `
+      precision mediump float;
+      uniform samplerCube uEnv;
+      varying vec3 vPosition;
+      void main() {
+        gl_FragColor = textureCube(uEnv, normalize(vPosition));
+      }`
+  }
+}
 
 /** @type {Canvas} */
 var canvas
+
+/** @type {Shader} */
+var sphereShader
+
+/** @type {Buffer} */
+var buffer
 
 /** @type {Skybox} */
 var skybox
@@ -199,34 +234,8 @@ var teapot
 /** @type {Sphere} */
 var sphere1, sphere2
 
-/** @type {RubikCube} */
-var rubikCube
-
-function degToRad (d) {
-  return (d * Math.PI) / 180
-}
-
-var X_AXIS = [1.0, 0.0, 0.0]
-var Y_AXIS = [0.0, 1.0, 0.0]
-var Z_AXIS = [0.0, 0.0, 1.0]
-
-const FOV = 50
-var VIEW_RADIUS = 2
-var viewOrigin = [VIEW_RADIUS, 0.0, 0.0]
-var viewAngle = 0
-var viewAngleStep = degToRad(0.2)
-
-var viewUp = [0.0, 1.0, 0.0]
-var viewLookAt = vec3.create()
-var viewCenter = vec3.create()
-
-var lightDirection = [-Math.cos(degToRad(40)), Math.sin(degToRad(40)), 0.0]
-var ambientLight = [0.08, 0.08, 0.08]
-var diffuseLight = [(0.2 * 253) / 255, (0.2 * 184) / 255, (0.2 * 19) / 255]
-var specularLight = [(1.0 * 253) / 255, (1.0 * 184) / 255, (1.0 * 19) / 255]
-
-var pMatrix = mat4.create()
-var mvMatrix = mat4.create()
+/** @type {RubiksCube} */
+var rubiksCube
 
 class Canvas {
   constructor (id) {
@@ -245,12 +254,11 @@ class Canvas {
       this.gl.enable(this.gl.CULL_FACE)
       this.gl.clearColor(1.0, 1.0, 1.0, 1.0)
     } catch (e) {
-      console.error(e)
+      console.log(e)
     } finally {
       if (!this.gl) {
         alert('[ERROR] WebGL initialization failed!')
       }
-      return
     }
   }
 
@@ -261,9 +269,8 @@ class Canvas {
 }
 
 class Shader {
-  constructor (vsSource, fsSource) {
-    this.vsSource = vsSource
-    this.fsSource = fsSource
+  constructor (source) {
+    this.source = source
 
     this.init()
   }
@@ -272,7 +279,6 @@ class Shader {
     this.program = canvas.gl.createProgram()
     this.setupVertexShader()
     this.setupFragmentShader()
-
     canvas.gl.linkProgram(this.program)
     if (!canvas.gl.getProgramParameter(this.program, canvas.gl.LINK_STATUS)) {
       console.error(canvas.gl.getShaderInfoLog())
@@ -281,7 +287,7 @@ class Shader {
 
   setupVertexShader () {
     this.vertex = canvas.gl.createShader(canvas.gl.VERTEX_SHADER)
-    canvas.gl.shaderSource(this.vertex, this.vsSource)
+    canvas.gl.shaderSource(this.vertex, this.source.vertex)
     canvas.gl.compileShader(this.vertex)
     if (!canvas.gl.getShaderParameter(this.vertex, canvas.gl.COMPILE_STATUS)) {
       alert('[ERROR] Vertex shader not compiled!')
@@ -292,7 +298,7 @@ class Shader {
 
   setupFragmentShader () {
     this.fragment = canvas.gl.createShader(canvas.gl.FRAGMENT_SHADER)
-    canvas.gl.shaderSource(this.fragment, this.fsSource)
+    canvas.gl.shaderSource(this.fragment, this.source.fragment)
     canvas.gl.compileShader(this.fragment)
     if (
       !canvas.gl.getShaderParameter(this.fragment, canvas.gl.COMPILE_STATUS)
@@ -301,6 +307,85 @@ class Shader {
       console.error(canvas.gl.getShaderInfoLog(this.fragment))
     }
     canvas.gl.attachShader(this.program, this.fragment)
+  }
+}
+
+class Buffer {
+  constructor () {
+    this.initSphere()
+  }
+
+  initSphere () {
+    this.sphere = {
+      position: canvas.gl.createBuffer(),
+      index: canvas.gl.createBuffer(),
+      normal: canvas.gl.createBuffer()
+    }
+
+    let positionArray = []
+    let indexArray = []
+    let normalArray = []
+
+    var nSlices = 50
+    var nStacks = 50
+    var radius = 1.0
+    for (var i = 0; i <= nSlices; i++) {
+      var angle = (i * Math.PI) / nSlices
+      var comp1 = Math.sin(angle)
+      var comp2 = Math.cos(angle)
+
+      for (var j = 0; j <= nStacks; j++) {
+        var phi = (j * 2 * Math.PI) / nStacks
+        var comp3 = Math.sin(phi)
+        var comp4 = Math.cos(phi)
+
+        var xcood = comp4 * comp1
+        var ycoord = comp2
+        var zcoord = comp3 * comp1
+
+        positionArray.push(-radius * xcood, -radius * ycoord, -radius * zcoord)
+        normalArray.push(xcood, ycoord, zcoord)
+      }
+    }
+
+    for (var i = 0; i < nSlices; i++) {
+      for (var j = 0; j < nStacks; j++) {
+        var id1 = i * (nStacks + 1) + j
+        var id2 = id1 + nStacks + 1
+
+        indexArray.push(id1, id2, id1 + 1)
+        indexArray.push(id2, id2 + 1, id1 + 1)
+      }
+    }
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.sphere.position)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
+      new Float32Array(positionArray),
+      canvas.gl.STATIC_DRAW
+    )
+    this.sphere.position.itemSize = 3
+    this.sphere.position.numItems =
+      positionArray.length / this.sphere.position.itemSize
+
+    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.sphere.index)
+    canvas.gl.bufferData(
+      canvas.gl.ELEMENT_ARRAY_BUFFER,
+      new Uint32Array(indexArray),
+      canvas.gl.STATIC_DRAW
+    )
+    this.sphere.index.itemSize = 1
+    this.sphere.index.numItems = indexArray.length
+
+    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.sphere.normal)
+    canvas.gl.bufferData(
+      canvas.gl.ARRAY_BUFFER,
+      new Float32Array(normalArray),
+      canvas.gl.STATIC_DRAW
+    )
+    this.sphere.normal.itemSize = 3
+    this.sphere.normal.numItems =
+      normalArray.length / this.sphere.normal.itemSize
   }
 }
 
@@ -320,6 +405,10 @@ class Skybox {
   }
 
   initShape () {
+    this.indexArray = [
+      0, 1, 2, 2, 1, 3, 4, 6, 5, 6, 7, 5, 0, 4, 1, 4, 5, 1, 2, 3, 6, 6, 3, 7, 0,
+      2, 4, 2, 6, 4, 1, 5, 3, 3, 5, 7
+    ]
     this.positionArray = []
     var sizes = [-this.size, this.size]
     for (var z in sizes) {
@@ -331,21 +420,6 @@ class Skybox {
         }
       }
     }
-
-    this.indexArray = [
-      //
-      0, 1, 2, 2, 1, 3,
-      //
-      4, 6, 5, 6, 7, 5,
-      //
-      0, 4, 1, 4, 5, 1,
-      //
-      2, 3, 6, 6, 3, 7,
-      //
-      0, 2, 4, 2, 6, 4,
-      //
-      1, 5, 3, 3, 5, 7
-    ]
   }
 
   initTexture () {
@@ -418,8 +492,7 @@ class Skybox {
   }
 
   initShader () {
-    this.shader = new Shader(skyboxVsCode, skyboxFsCode)
-
+    this.shader = new Shader(shaders.skybox)
     this.locations = {
       aVertexPosition: canvas.gl.getAttribLocation(
         this.shader.program,
@@ -474,8 +547,16 @@ class Skybox {
 
     canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
 
-    canvas.gl.uniformMatrix4fv(this.locations.uPMatrix, false, pMatrix)
-    canvas.gl.uniformMatrix4fv(this.locations.uMVMatrix, false, mvMatrix)
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uPMatrix,
+      false,
+      globalVars.pMatrix
+    )
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uMVMatrix,
+      false,
+      globalVars.mvMatrix
+    )
     canvas.gl.uniform1i(this.locations.uEnv, 0)
 
     canvas.gl.activeTexture(canvas.gl.TEXTURE0)
@@ -526,7 +607,7 @@ class Teapot {
   }
 
   initShader () {
-    this.shader = new Shader(teapotVsCode, teapotFsCode)
+    this.shader = new Shader(shaders.teapot)
 
     this.locations = {
       aPosition: canvas.gl.getAttribLocation(this.shader.program, 'aPosition'),
@@ -629,15 +710,29 @@ class Teapot {
     )
 
     canvas.gl.uniformMatrix4fv(this.locations.uMMatrix, false, this.mMatrix)
-    canvas.gl.uniformMatrix4fv(this.locations.uVMatrix, false, mvMatrix)
-    canvas.gl.uniformMatrix4fv(this.locations.uPMatrix, false, pMatrix)
-    canvas.gl.uniform3fv(this.locations.uViewOrigin, viewOrigin)
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uVMatrix,
+      false,
+      globalVars.mvMatrix
+    )
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uPMatrix,
+      false,
+      globalVars.pMatrix
+    )
+    canvas.gl.uniform3fv(this.locations.uViewOrigin, globalVars.viewOrigin)
     canvas.gl.uniform1i(this.locations.uEnv, 0)
 
-    canvas.gl.uniform3fv(this.locations.uLightDirection, lightDirection)
-    canvas.gl.uniform3fv(this.locations.uAmbientLight, ambientLight)
-    canvas.gl.uniform3fv(this.locations.uDiffuseLight, diffuseLight)
-    canvas.gl.uniform3fv(this.locations.uSpecularLight, specularLight)
+    canvas.gl.uniform3fv(
+      this.locations.uLightDirection,
+      globalVars.lightDirection
+    )
+    canvas.gl.uniform3fv(this.locations.uAmbientLight, globalVars.ambientLight)
+    canvas.gl.uniform3fv(this.locations.uDiffuseLight, globalVars.diffuseLight)
+    canvas.gl.uniform3fv(
+      this.locations.uSpecularLight,
+      globalVars.specularLight
+    )
 
     canvas.gl.drawElements(
       canvas.gl.TRIANGLES,
@@ -660,57 +755,13 @@ class Sphere {
   }
 
   init () {
-    this.initShape()
     this.initShader()
     this.initBuffer()
     this.initMatrices()
   }
 
-  initShape () {
-    this.positionArray = []
-    this.indexArray = []
-    this.normalArray = []
-
-    var nSlices = 50
-    var nStacks = 50
-    var radius = 1.0
-    for (var i = 0; i <= nSlices; i++) {
-      var angle = (i * Math.PI) / nSlices
-      var comp1 = Math.sin(angle)
-      var comp2 = Math.cos(angle)
-
-      for (var j = 0; j <= nStacks; j++) {
-        var phi = (j * 2 * Math.PI) / nStacks
-        var comp3 = Math.sin(phi)
-        var comp4 = Math.cos(phi)
-
-        var xcood = comp4 * comp1
-        var ycoord = comp2
-        var zcoord = comp3 * comp1
-
-        this.positionArray.push(
-          -radius * xcood,
-          -radius * ycoord,
-          -radius * zcoord
-        )
-        this.normalArray.push(xcood, ycoord, zcoord)
-      }
-    }
-
-    for (var i = 0; i < nSlices; i++) {
-      for (var j = 0; j < nStacks; j++) {
-        var id1 = i * (nStacks + 1) + j
-        var id2 = id1 + nStacks + 1
-
-        this.indexArray.push(id1, id2, id1 + 1)
-        this.indexArray.push(id2, id2 + 1, id1 + 1)
-      }
-    }
-  }
-
   initShader () {
-    this.shader = new Shader(sphereVsCode, sphereFsCode)
-
+    this.shader = sphereShader
     this.locations = {
       aPosition: canvas.gl.getAttribLocation(this.shader.program, 'aPosition'),
       aNormal: canvas.gl.getAttribLocation(this.shader.program, 'aNormal'),
@@ -746,40 +797,7 @@ class Sphere {
   }
 
   initBuffer () {
-    this.buffer = {
-      position: canvas.gl.createBuffer(),
-      index: canvas.gl.createBuffer(),
-      normal: canvas.gl.createBuffer()
-    }
-
-    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.position)
-    canvas.gl.bufferData(
-      canvas.gl.ARRAY_BUFFER,
-      new Float32Array(this.positionArray),
-      canvas.gl.STATIC_DRAW
-    )
-    this.buffer.position.itemSize = 3
-    this.buffer.position.numItems =
-      this.positionArray.length / this.buffer.position.itemSize
-
-    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
-    canvas.gl.bufferData(
-      canvas.gl.ELEMENT_ARRAY_BUFFER,
-      new Uint32Array(this.indexArray),
-      canvas.gl.STATIC_DRAW
-    )
-    this.buffer.index.itemSize = 1
-    this.buffer.index.numItems = this.indexArray.length
-
-    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.buffer.normal)
-    canvas.gl.bufferData(
-      canvas.gl.ARRAY_BUFFER,
-      new Float32Array(this.normalArray),
-      canvas.gl.STATIC_DRAW
-    )
-    this.buffer.normal.itemSize = 3
-    this.buffer.normal.numItems =
-      this.normalArray.length / this.buffer.normal.itemSize
+    this.buffer = buffer.sphere
   }
 
   initMatrices () {
@@ -823,15 +841,28 @@ class Sphere {
     )
 
     canvas.gl.uniformMatrix4fv(this.locations.uMMatrix, false, this.mMatrix)
-    canvas.gl.uniformMatrix4fv(this.locations.uVMatrix, false, mvMatrix)
-    canvas.gl.uniformMatrix4fv(this.locations.uPMatrix, false, pMatrix)
-    canvas.gl.uniform3fv(this.locations.uViewOrigin, viewOrigin)
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uVMatrix,
+      false,
+      globalVars.mvMatrix
+    )
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uPMatrix,
+      false,
+      globalVars.pMatrix
+    )
+    canvas.gl.uniform3fv(this.locations.uViewOrigin, globalVars.viewOrigin)
     canvas.gl.uniform1i(this.locations.uEnv, 0)
-
-    canvas.gl.uniform3fv(this.locations.uLightDirection, lightDirection)
-    canvas.gl.uniform3fv(this.locations.uAmbientLight, ambientLight)
-    canvas.gl.uniform3fv(this.locations.uDiffuseLight, diffuseLight)
-    canvas.gl.uniform3fv(this.locations.uSpecularLight, specularLight)
+    canvas.gl.uniform3fv(
+      this.locations.uLightDirection,
+      globalVars.lightDirection
+    )
+    canvas.gl.uniform3fv(this.locations.uAmbientLight, globalVars.ambientLight)
+    canvas.gl.uniform3fv(this.locations.uDiffuseLight, globalVars.diffuseLight)
+    canvas.gl.uniform3fv(
+      this.locations.uSpecularLight,
+      globalVars.specularLight
+    )
     canvas.gl.uniform3fv(this.locations.vVertexColor, this.color)
 
     canvas.gl.drawElements(
@@ -846,7 +877,7 @@ class Sphere {
   }
 }
 
-class RubikCube {
+class RubiksCube {
   constructor (imagePath) {
     this.imagePath = imagePath
     this.size = 0.4
@@ -863,6 +894,10 @@ class RubikCube {
   }
 
   initShape () {
+    this.indexArray = [
+      0, 2, 1, 2, 3, 1, 4, 5, 6, 6, 5, 7, 0, 1, 4, 4, 1, 5, 2, 6, 3, 6, 7, 3, 0,
+      4, 2, 2, 4, 6, 1, 3, 5, 3, 7, 5
+    ]
     this.positionArray = []
     var sizes = [-this.size, this.size]
     for (var z in sizes) {
@@ -874,21 +909,6 @@ class RubikCube {
         }
       }
     }
-
-    this.indexArray = [
-      //
-      0, 2, 1, 2, 3, 1,
-      //
-      4, 5, 6, 6, 5, 7,
-      //
-      0, 1, 4, 4, 1, 5,
-      //
-      2, 6, 3, 6, 7, 3,
-      //
-      0, 4, 2, 2, 4, 6,
-      //
-      1, 3, 5, 3, 7, 5
-    ]
   }
 
   initTexture () {
@@ -961,8 +981,7 @@ class RubikCube {
   }
 
   initShader () {
-    this.shader = new Shader(rubikCubeVsCode, rubikCubeFsCode)
-
+    this.shader = new Shader(shaders.rubiksCube)
     this.locations = {
       aVertexPosition: canvas.gl.getAttribLocation(
         this.shader.program,
@@ -1025,11 +1044,18 @@ class RubikCube {
 
     canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.buffer.index)
 
-    canvas.gl.uniformMatrix4fv(this.locations.uPMatrix, false, pMatrix)
-    canvas.gl.uniformMatrix4fv(this.locations.uMVMatrix, false, mvMatrix)
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uPMatrix,
+      false,
+      globalVars.pMatrix
+    )
+    canvas.gl.uniformMatrix4fv(
+      this.locations.uMVMatrix,
+      false,
+      globalVars.mvMatrix
+    )
     canvas.gl.uniformMatrix4fv(this.locations.uMMatrix, false, this.modelMatrix)
     canvas.gl.uniform1i(this.locations.uEnv, 1)
-
     canvas.gl.activeTexture(canvas.gl.TEXTURE1)
     canvas.gl.bindTexture(canvas.gl.TEXTURE_CUBE_MAP, this.texture)
 
@@ -1045,32 +1071,44 @@ class RubikCube {
 }
 
 const updateMatrices = () => {
-  viewAngle += viewAngleStep
-  viewOrigin = [
-    VIEW_RADIUS * Math.cos(viewAngle),
-    0.0,
-    VIEW_RADIUS * Math.sin(viewAngle)
+  globalVars.viewAngle += globalVars.viewAngleStep
+  globalVars.viewOrigin = [
+    2 * Math.cos(globalVars.viewAngle),
+    1.0,
+    2 * Math.sin(globalVars.viewAngle)
   ]
-  viewLookAt = [-Math.cos(viewAngle), 0.0, -Math.sin(viewAngle)]
-  mat4.lookAt(viewOrigin, viewCenter, viewUp, mvMatrix)
+  globalVars.viewLookAt = [
+    -Math.cos(globalVars.viewAngle),
+    0.0,
+    -Math.sin(globalVars.viewAngle)
+  ]
+  mat4.lookAt(
+    globalVars.viewOrigin,
+    globalVars.viewCenter,
+    globalVars.viewUp,
+    globalVars.mvMatrix
+  )
 }
 
 const initialize = () => {
   canvas = new Canvas('canvas')
-  mat4.identity(pMatrix)
+  buffer = new Buffer()
+  mat4.identity(globalVars.pMatrix)
   mat4.perspective(
     50,
     canvas.gl.viewportWidth / canvas.gl.viewportHeight,
     0.1,
     1000,
-    pMatrix
+    globalVars.pMatrix
   )
 
   skybox = new Skybox('assets/images/')
   teapot = new Teapot('assets/meshes/teapot.json')
+
+  sphereShader = new Shader(shaders.sphere)
   sphere1 = new Sphere([32, 82, 64], 1)
   sphere2 = new Sphere([52, 66, 125], 2)
-  rubikCube = new RubikCube('assets/images/rcube.png')
+  rubiksCube = new RubiksCube('assets/images/rcube.png')
 }
 
 const drawScene = () => {
@@ -1082,7 +1120,7 @@ const drawScene = () => {
   teapot.draw()
   sphere1.draw()
   sphere2.draw()
-  rubikCube.draw()
+  rubiksCube.draw()
 }
 
 const webGLStart = () => {
