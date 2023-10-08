@@ -19,21 +19,22 @@ const globalVars = {
 
 const shaders = {
   skybox: {
-    vertex: `
-      attribute vec3 aVertexPosition;
+    vertex: `#version 300 es
+      in vec3 aVertexPosition;
       uniform mat4 uPMatrix;
       uniform mat4 uMVMatrix; 
-      varying vec3 vPosition;
+      out vec3 vPosition;
       void main() {
         gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
         vPosition= aVertexPosition;   
       }`,
-    fragment: `
+    fragment: `#version 300 es
       precision mediump float;
       uniform samplerCube uEnv;
-      varying vec3 vPosition;
+      in vec3 vPosition;
+      out vec4 fragColor;
       void main() {
-        gl_FragColor = textureCube(uEnv, normalize(vPosition));
+        fragColor = texture(uEnv, normalize(vPosition));
       }`
   },
   teapot: {
@@ -196,22 +197,23 @@ const shaders = {
       }`
   },
   rubiksCube: {
-    vertex: `
-      attribute vec3 aVertexPosition;
+    vertex: `#version 300 es
+      in vec3 aVertexPosition;
       uniform mat4 uPMatrix;
       uniform mat4 uMVMatrix; 
       uniform mat4 uMMatrix;
-      varying vec3 vPosition;
+      out vec3 vPosition;
       void main() {
         gl_Position = uPMatrix * uMVMatrix * uMMatrix * vec4(aVertexPosition, 1.0);
         vPosition= aVertexPosition;   
       }`,
-    fragment: `
+    fragment: `#version 300 es
       precision mediump float;
       uniform samplerCube uEnv;
-      varying vec3 vPosition;
+      in vec3 vPosition;
+      out vec4 fragColor;
       void main() {
-        gl_FragColor = textureCube(uEnv, normalize(vPosition));
+        fragColor = texture(uEnv, normalize(vPosition));
       }`
   },
   tableTop: {
