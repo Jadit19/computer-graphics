@@ -227,10 +227,12 @@ const shaders = {
       out vec3 vModelNormal;
       out vec3 vWorldPosition;
       out vec3 vWorldNormal;
+      out mat4 vModelMatrix;
 
       void main() {
         vModelPosition = aVertexPosition;
         vModelNormal = aVertexNormal;
+        vModelMatrix = uModelMatrix;
 
         vec4 worldPosition = uModelMatrix * vec4(aVertexPosition, 1.0);
 
@@ -249,6 +251,7 @@ const shaders = {
       in vec3 vModelNormal;
       in vec3 vWorldPosition;
       in vec3 vWorldNormal;
+      in mat4 vModelMatrix;
       uniform vec3 vVertexColor;
       
       out vec4 fragColor;
@@ -266,28 +269,26 @@ const shaders = {
         vec3 worldPosition = vWorldPosition;
         vec3 worldNormal = normalize(vWorldNormal);
         vec3 modelPosition = vModelPosition;
-      
+
         modelPosition.y -= 1.0;
         modelPosition = normalize(modelPosition);
-        vec3 modelNormal = normalize(vModelNormal);
-      
-        vec2 textureCoord;
+        
+        vec3 transformedNormal = normalize(mat3(transpose(inverse(vModelMatrix))) * vModelNormal);
+        vec3 transformedLightDirection = normalize(mat3(transpose(inverse(vModelMatrix))) * uLightDirection);
+
+        vec2 textureCoord = vec2(0.5, 0.5);
         textureCoord.s = -atan(-modelPosition.z, -modelPosition.x) / 2.0 / PI + 0.5;
         textureCoord.t = 0.5 - 0.5 * modelPosition.y;
-      
-        vec3 tangentBAxis = vec3(0.0,1.0,0.0);
-        tangentBAxis = normalize(tangentBAxis - dot(tangentBAxis, worldNormal) * worldNormal);
-        vec3 tangentTAxis = normalize(cross(tangentBAxis, worldNormal));
-      
+
         vec3 normalizedLightDirection = normalize(uLightDirection);
-        vec3 vectorReflection = normalize(reflect(-normalizedLightDirection, worldNormal));
-        vec3 vectorView = normalize(uViewOrigin - worldPosition);
-      
+        vec3 vectorReflection = normalize( reflect(-normalizedLightDirection, worldNormal) );
+        vec3 vectorView = normalize( uViewOrigin - worldPosition );
+
         float diffuseLightWeighting = max( dot(worldNormal, normalizedLightDirection), 0.0 );
         float specularLightWeighting = pow( max( dot(vectorReflection, vectorView), 0.0), shininess );
       
         fragColor = 0.5* vec4(texture(uTextureMap, textureCoord).rgb, 2.0);
-        fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, worldNormal))).rgb, 0.0);
+        fragColor += 0.4 * vec4(texture(uEnv, normalize(reflect(-vectorView, transformedNormal))).rgb, 0.0);
       }`
   },
   tableLeg: {
@@ -490,7 +491,7 @@ class Canvas {
       this.gl.enable(this.gl.DEPTH_TEST)
       this.gl.clearColor(1.0, 1.0, 1.0, 1.0)
     } catch (e) {
-      console.log(e)
+      console.error(e)
     } finally {
       if (!this.gl) {
         alert('[ERROR] WebGL initialization failed!')
@@ -1600,8 +1601,6 @@ class TableLeg {
         'uTextureMap'
       )
     }
-
-    console.log(this.locations)
   }
 
   initBuffer () {
