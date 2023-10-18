@@ -13,41 +13,42 @@
 
     <title>CS360: Assignment 3</title>
   </head>
-  <body onload="webGLStart()">
-    <canvas width="500" height="500" id="canvas"></canvas>
+  <body onload="webGLStart()" style="display: flex;justify-content: center;">
 
-    <br /><br />
+    <canvas width="800" height="800" id="canvas"></canvas>
 
-    <label for="background">Select Background Image</label>
-    <input id="background" type="file" accept=".png" style="margin-bottom: 10px;" /><br />
-    <label for="foreground">Select Foreground Image</label>
-    <input id="foreground" type="file" accept=".png" /><br />
-    
-    <h3>Image Mode</h3>
-    <input name="mode" id="mode-bg-only" type="radio" value="0"><label for="mode-bg-only">Background Only</label></input>
-    <input name="mode" id="mode-alpha" type="radio" value="1" checked><label for="mode-alpha">Alpha Blended</label></input>
+    <div style="padding-left: 20px;padding-top: 20px;">
+      <label for="background">Select Background Image</label>
+      <input id="background" type="file" accept=".png" style="margin-bottom: 10px;" /><br />
+      <label for="foreground">Select Foreground Image</label>
+      <input id="foreground" type="file" accept=".png" /><br />
+      
+      <h3>Image Mode</h3>
+      <input name="mode" id="mode-bg-only" type="radio" value="0"><label for="mode-bg-only">Background Only</label></input>
+      <input name="mode" id="mode-alpha" type="radio" value="1" checked><label for="mode-alpha">Alpha Blended</label></input>
 
-    <h3>Coloring</h3>
-    <input name="coloring" id="color-original" type="radio" value="0" checked><label for="color-original">Original</label></input>
-    <input name="coloring" id="color-grayscale" type="radio" value="1"><label for="color-grayscale">Grayscale</label></input>
-    <input name="coloring" id="color-sepia" type="radio" value="2"><label for="color-sepia">Sepia</label></input><br /><br />
+      <h3>Coloring</h3>
+      <input name="coloring" id="color-original" type="radio" value="0" checked><label for="color-original">Original</label></input>
+      <input name="coloring" id="color-grayscale" type="radio" value="1"><label for="color-grayscale">Grayscale</label></input>
+      <input name="coloring" id="color-sepia" type="radio" value="2"><label for="color-sepia">Sepia</label></input><br /><br />
 
-    <label for="contrast">Contrast</label>
-    <input id="contrast" type="range" value="0" min="-0.5" max="0.5" step="0.01" style="width: 200px;" /><br />
+      <label for="contrast">Contrast</label>
+      <input id="contrast" type="range" value="0" min="-0.5" max="0.5" step="0.01" style="width: 200px;" /><br />
 
-    <label for="brightness">Brightness</label>
-    <input id="brightness" type="range" value="0" min="-0.5" max="0.5" step="0.01" style="width: 200px;" />
+      <label for="brightness">Brightness</label>
+      <input id="brightness" type="range" value="0" min="-0.5" max="0.5" step="0.01" style="width: 200px;" />
 
-    <h3>Process Background Image</h3>
-    <input name="process" id="process-none" type="radio" value="0" checked><label for="process-none">None</label></input>
-    <input name="process" id="process-smooth" type="radio" value="1"><label for="process-smooth">Smooth</label></input>
-    <input name="process" id="process-sharpen" type="radio" value="2"><label for="process-sharpen">Sharpen</label></input>
-    <input name="process" id="process-gradient" type="radio" value="3"><label for="process-gradient">Gradient</label></input>
-    <input name="process" id="process-laplacian" type="radio" value="4"><label for="process-laplacian">Laplacian</label></input><br /><br />
+      <h3>Process Background Image</h3>
+      <input name="process" id="process-none" type="radio" value="0" checked><label for="process-none">None</label></input>
+      <input name="process" id="process-smooth" type="radio" value="1"><label for="process-smooth">Smooth</label></input>
+      <input name="process" id="process-sharpen" type="radio" value="2"><label for="process-sharpen">Sharpen</label></input>
+      <input name="process" id="process-gradient" type="radio" value="3"><label for="process-gradient">Gradient</label></input>
+      <input name="process" id="process-laplacian" type="radio" value="4"><label for="process-laplacian">Laplacian</label></input><br /><br />
 
-    <button id="reset">Reset Scene</button>
-    <button id="save">Save Screenshot</button><br /><br />
+      <button id="reset">Reset Scene</button>
+      <button id="save">Save Screenshot</button><br /><br />
 
-    <div id="alert" style="background-color: red; color: white; width: fit-content;"></div>
+      <div id="alert" style="background-color: red; color: white; width: fit-content;"></div>
+    </div>
   </body>
 </html>

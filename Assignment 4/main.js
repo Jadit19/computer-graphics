@@ -20,19 +20,54 @@ uniform float mode;
 uniform float coloring;
 uniform float brightness;
 uniform float contrast;
+uniform float process;
+uniform vec2 imageSize;
 uniform sampler2D uBackgroundSampler;
 uniform sampler2D uForegroundSampler;
 
 void main(){
 
+  vec4 postProcessBackground = vec4(0.0);
+  vec2 onePixel = vec2(1, 1) / imageSize;
+  if (process == 0.0){
+    postProcessBackground = texture(uBackgroundSampler, vTexCoord);
+  } else if (process == 1.0){
+    mat3 kernel = mat3(
+      1, 1, 1,
+      1, 1, 1,
+      1, 1, 1
+    ) / 9.0;
+    for (int i=0; i<3; i++){
+      for (int j=0; j<3; j++){
+        vec2 samplePosition = vTexCoord + vec2(i-1, j-1) * onePixel;
+        vec4 sampleColor = texture(uBackgroundSampler, samplePosition);
+        sampleColor *= kernel[i][j];
+        postProcessBackground += sampleColor;
+      }
+    }
+  } else if (process == 2.0){
+    mat3 kernel = mat3(
+      -1, -1, -1,
+      -1, 9, -1,
+      -1, -1, -1
+    );
+    for (int i=0; i<3; i++){
+      for (int j=0; j<3; j++){
+        vec2 samplePosition = vTexCoord + vec2(i-1, j-1) * onePixel;
+        vec4 sampleColor = texture(uBackgroundSampler, samplePosition);
+        sampleColor *= kernel[i][j];
+        postProcessBackground += sampleColor;
+      }
+    }
+  }
+
   vec4 postMode;
   if (mode == 0.0) {
-    postMode = texture(uBackgroundSampler, vTexCoord);
+    postMode = postProcessBackground;
   } else if (mode == 1.0){
-    vec4 colorBackground = texture(uBackgroundSampler, vTexCoord);
     vec4 colorForeground = texture(uForegroundSampler, vTexCoord);
     float af =  colorForeground.a;
-    postMode = af * colorForeground + (1.0 - af) * colorBackground;
+    postMode = af * colorForeground + (1.0 - af) * postProcessBackground;
   }
 
   vec4 postColoring;
@@ -158,7 +193,9 @@ class Shader {
       mode: canvas.gl.getUniformLocation(this.program, 'mode'),
       coloring: canvas.gl.getUniformLocation(this.program, 'coloring'),
       brightness: canvas.gl.getUniformLocation(this.program, 'brightness'),
-      contrast: canvas.gl.getUniformLocation(this.program, 'contrast')
+      contrast: canvas.gl.getUniformLocation(this.program, 'contrast'),
+      process: canvas.gl.getUniformLocation(this.program, 'process'),
+      imageSize: canvas.gl.getUniformLocation(this.program, 'imageSize')
     }
   }
 }
@@ -465,6 +502,12 @@ const drawScene = () => {
   canvas.gl.uniform1f(shader.locations.coloring, inputs.color)
   canvas.gl.uniform1f(shader.locations.brightness, inputs.brightness)
   canvas.gl.uniform1f(shader.locations.contrast, inputs.contrast)
+  canvas.gl.uniform1f(shader.locations.process, inputs.process)
+  canvas.gl.uniform2f(
+    shader.locations.imageSize,
+    canvas.gl.viewportWidth,
+    canvas.gl.viewportHeight
+  )
 
   canvas.gl.drawElements(canvas.gl.TRIANGLES, 6, canvas.gl.UNSIGNED_SHORT, 0)
 }
