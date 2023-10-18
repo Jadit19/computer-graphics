@@ -286,11 +286,21 @@ class Inputs {
 
   setupReset () {
     document.getElementById('reset').addEventListener('click', () => {
-      this.mode = 0.0
+      this.mode = 1.0
+      document.getElementById('mode-alpha').click()
+
       this.color = 0.0
+      document.getElementById('color-original').click()
+
       this.contrast = 0.0
+      document.getElementById('contrast').value = 0.0
+
       this.brightness = 0.0
+      document.getElementById('brightness').value = 0.0
+
       this.process = 0.0
+      document.getElementById('process-none').click()
+
       drawScene()
     })
   }
