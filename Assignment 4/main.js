@@ -286,7 +286,7 @@ class Inputs {
   }
 
   setupMode () {
-    this.mode = 1.0
+    this.mode = 0.0
     document.getElementById('mode-bg-only').addEventListener('change', e => {
       this.mode = 0.0
       drawScene()
@@ -359,20 +359,15 @@ class Inputs {
 
   setupReset () {
     document.getElementById('reset').addEventListener('click', () => {
-      this.mode = 1.0
-      document.getElementById('mode-alpha').click()
-
-      this.color = 0.0
+      document.getElementById('mode-bg-only').click()
       document.getElementById('color-original').click()
+      document.getElementById('process-none').click()
 
       this.contrast = 0.0
       document.getElementById('contrast').value = 0.0
 
       this.brightness = 0.0
       document.getElementById('brightness').value = 0.0
-
-      this.process = 0.0
-      document.getElementById('process-none').click()
 
       drawScene()
     })
