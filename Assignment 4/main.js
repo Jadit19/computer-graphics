@@ -39,7 +39,7 @@ void main(){
     ) / 9.0;
     for (int i=0; i<3; i++){
       for (int j=0; j<3; j++){
-        vec2 samplePosition = vTexCoord + vec2(i-1, j-1) * onePixel;
+        vec2 samplePosition = vTexCoord + vec2(i-1, j-1) * 3.0 * onePixel;
         vec4 sampleColor = texture(uBackgroundSampler, samplePosition);
         sampleColor *= kernel[i][j];
         postProcessBackground += sampleColor;
@@ -50,6 +50,33 @@ void main(){
       -1, -1, -1,
       -1, 9, -1,
       -1, -1, -1
+    );
+    for (int i=0; i<3; i++){
+      for (int j=0; j<3; j++){
+        vec2 samplePosition = vTexCoord + vec2(i-1, j-1) * onePixel;
+        vec4 sampleColor = texture(uBackgroundSampler, samplePosition);
+        sampleColor *= kernel[i][j];
+        postProcessBackground += sampleColor;
+      }
+    }
+  } else if (process == 3.0){
+    vec2 samplePosition = vTexCoord + vec2(1, 0) * onePixel;
+    vec4 right = texture(uBackgroundSampler, samplePosition);
+    samplePosition = vTexCoord + vec2(-1, 0) * onePixel;
+    vec4 left = texture(uBackgroundSampler, samplePosition);
+    samplePosition = vTexCoord + vec2(0, 1) * onePixel;
+    vec4 up = texture(uBackgroundSampler, samplePosition);
+    samplePosition = vTexCoord + vec2(0, -1) * onePixel;
+    vec4 down = texture(uBackgroundSampler, samplePosition);
+    vec4 dy = (up - down) / 2.0;
+    vec4 dx = (right - left) / 2.0;
+    vec4 gradient = sqrt(dy * dy + dx * dx);
+    postProcessBackground = gradient;
+  } else if (process == 4.0){
+    mat3 kernel = mat3(
+      0, -1, 0,
+      -1, 4, -1,
+      0, -1, 0
     );
     for (int i=0; i<3; i++){
       for (int j=0; j<3; j++){
@@ -114,7 +141,9 @@ class Canvas {
   init () {
     try {
       /** @type {WebGL2RenderingContext} */
-      this.gl = this.element.getContext('webgl2')
+      this.gl = this.element.getContext('webgl2', {
+        preserveDrawingBuffer: true
+      })
       this.gl.viewportWidth = this.element.width
       this.gl.viewportHeight = this.element.height
       this.gl.enable(this.gl.DEPTH_TEST)
@@ -344,12 +373,13 @@ class Inputs {
 
   setupSave () {
     document.getElementById('save').addEventListener('click', () => {
-      console.log('Saved')
-      const link = document.createElement('a')
-      link.download = 'download.png'
-      link.href = canvas.element.toDataURL('image/png', 'image/octet-stream')
-      link.click()
-      link.delete
+      canvas.element.toBlob(blob => {
+        drawScene()
+        const link = document.createElement('a')
+        link.download = 'screenshot.png'
+        link.href = window.URL.createObjectURL(blob)
+        link.click()
+      })
     })
   }
 }
