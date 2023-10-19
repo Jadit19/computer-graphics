@@ -27,10 +27,11 @@ uniform sampler2D uForegroundSampler;
 
 void main(){
 
+  vec4 colorBackground = texture(uBackgroundSampler, vTexCoord);
   vec4 postProcessBackground = vec4(0.0);
   vec2 onePixel = vec2(1, 1) / imageSize;
   if (process == 0.0){
-    postProcessBackground = texture(uBackgroundSampler, vTexCoord);
+    postProcessBackground = colorBackground;
   } else if (process == 1.0){
     mat3 kernel = mat3(
       1, 1, 1,
@@ -60,6 +61,7 @@ void main(){
       }
     }
   } else if (process == 3.0){
+    postProcessBackground = colorBackground / 9.0;
     vec2 samplePosition = vTexCoord + vec2(1, 0) * onePixel;
     vec4 right = texture(uBackgroundSampler, samplePosition);
     samplePosition = vTexCoord + vec2(-1, 0) * onePixel;
@@ -71,13 +73,15 @@ void main(){
     vec4 dy = (up - down) / 2.0;
     vec4 dx = (right - left) / 2.0;
     vec4 gradient = sqrt(dy * dy + dx * dx);
-    postProcessBackground = gradient;
+    postProcessBackground += gradient;
+    postProcessBackground.a = colorBackground.a;
   } else if (process == 4.0){
     mat3 kernel = mat3(
       0, -1, 0,
       -1, 4, -1,
       0, -1, 0
     );
+    postProcessBackground = colorBackground / 9.0;
     for (int i=0; i<3; i++){
       for (int j=0; j<3; j++){
         vec2 samplePosition = vTexCoord + vec2(i-1, j-1) * onePixel;
@@ -86,6 +90,7 @@ void main(){
         postProcessBackground += sampleColor;
       }
     }
+    postProcessBackground.a = colorBackground.a;
   }
 
   vec4 postMode;
@@ -147,7 +152,6 @@ class Canvas {
       this.gl.viewportWidth = this.element.width
       this.gl.viewportHeight = this.element.height
       this.gl.enable(this.gl.DEPTH_TEST)
-      this.gl.clearColor(1.0, 1.0, 1.0, 1.0)
     } catch (e) {
       console.error(e)
     } finally {
@@ -160,6 +164,7 @@ class Canvas {
   clear () {
     this.gl.viewport(0, 0, this.element.width, this.element.height)
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
+    this.gl.clearColor(0.9, 0.9, 0.9, 1.0)
   }
 }
 
@@ -244,38 +249,40 @@ class Inputs {
 
   setupBackground () {
     this.background = new Image()
-    this.background.src = 'assets/background.jpg'
-    backgroundTexture = new Texture(this.background, 0)
-    // const backgroundButton = document.getElementById('background')
-    // backgroundButton.addEventListener('change', event => {
-    //   const file = event.target.files[0]
-    //   if (file) {
-    //     const reader = new FileReader()
-    //     reader.addEventListener('load', e => {
-    //       this.background.src = e.target.result
-    //       drawScene()
-    //     })
-    //     reader.readAsDataURL(file)
-    //   }
-    // })
+    const backgroundButton = document.getElementById('background')
+    backgroundButton.addEventListener('change', event => {
+      const file = event.target.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.addEventListener('load', e => {
+          this.background.src = e.target.result
+        })
+        reader.readAsDataURL(file)
+      }
+    })
+    this.background.addEventListener('load', () => {
+      backgroundTexture = new Texture(this.background, 0)
+      drawScene()
+    })
   }
 
   setupForeground () {
     this.foreground = new Image()
-    this.foreground.src = 'assets/foreground.png'
-    foregroundTexture = new Texture(this.foreground, 1)
-    // const foregroundButton = document.getElementById('foreground')
-    // foregroundButton.addEventListener('change', event => {
-    //   const file = event.target.files[0]
-    //   if (file) {
-    //     const reader = new FileReader()
-    //     reader.addEventListener('load', e => {
-    //       this.foreground.src = e.target.result
-    //       drawScene()
-    //     })
-    //     reader.readAsDataURL(file)
-    //   }
-    // })
+    const foregroundButton = document.getElementById('foreground')
+    foregroundButton.addEventListener('change', event => {
+      const file = event.target.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.addEventListener('load', e => {
+          this.foreground.src = e.target.result
+        })
+        reader.readAsDataURL(file)
+      }
+    })
+    this.foreground.addEventListener('load', () => {
+      foregroundTexture = new Texture(this.foreground, 1)
+      drawScene()
+    })
   }
 
   setupMode () {
@@ -466,6 +473,7 @@ const initialize = () => {
   buffer = new Buffer()
   shader = new Shader(vertexCode, fragmentCode)
   inputs = new Inputs()
+  foregroundTexture = new Texture(new Image(), 1)
 
   canvas.clear()
 }
@@ -478,7 +486,7 @@ const checkErrors = () => {
   }
 
   if (inputs.mode === 1) {
-    if (inputs.foreground.src === '') {
+    if (inputs.foreground.src == '') {
       document.getElementById('alert').innerText =
         'Foreground Image not loaded!'
       document.getElementById('alert').style.padding = '10px'
