@@ -1,11 +1,27 @@
+const shaderCode = {
+  vertex: `#version 330 es
+    in vec3 aPosition;
+    out vec3 vPosition;
+    void main() {
+      vPosition = aPosition;
+      gl_Position = vec4(aPosition, 1.0);
+    }
+  `,
+  fragment: `#version 330 es
+    precision mediump float;
+    in vec3 vPosition;
+    out vec4 fragColor;
+    void main() {
+      fragColor = vec4(aPosition,  0);
+    }
+  `
+}
+
 /** @type {Canvas} */
 var canvas
 
-/** @type {Buffer} */
-var buffer
-
-/** @type {Shader} */
-var shader
+/** @type {Inputs} */
+var inputs
 
 class Canvas {
   constructor (id) {
@@ -34,101 +50,6 @@ class Canvas {
     this.gl.clearColor(0.9, 0.9, 0.9, 1.0)
     this.gl.viewport(0, 0, this.element.width, this.element.height)
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT)
-  }
-}
-
-class Buffer {
-  constructor () {
-    this.initSphere()
-  }
-
-  initSphere () {
-    this.sphere = {
-      vertices: null,
-      vertex: null,
-      indices: null,
-      index: null,
-      normal: null,
-      normals: null
-    }
-    this.initSphereLocations()
-    this.initSphereIndices()
-  }
-
-  initSphereLocations () {
-    const latitudeBands = 30
-    const longitudeBands = 30
-    const radius = 0.5
-    let array = []
-    let array2 = []
-    for (let i = 0; i <= latitudeBands; i++) {
-      const theta = (i * Math.PI) / latitudeBands
-      const sinTheta = Math.sin(theta)
-      const cosTheta = Math.cos(theta)
-      for (let j = 0; j <= longitudeBands; j++) {
-        const phi = (j * 2 * Math.PI) / longitudeBands
-        const sinPhi = Math.sin(phi)
-        const cosPhi = Math.cos(phi)
-        const x = cosPhi * sinTheta
-        const y = cosTheta
-        const z = sinPhi * sinTheta
-        array.push(radius * x)
-        array.push(radius * y)
-        array.push(radius * z)
-        array2.push(x)
-        array2.push(y)
-        array2.push(z)
-      }
-    }
-
-    this.sphere.vertices = new Float32Array(array)
-    this.sphere.vertex = canvas.gl.createBuffer()
-    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.sphere.vertex)
-    canvas.gl.bufferData(
-      canvas.gl.ARRAY_BUFFER,
-      this.sphere.vertices,
-      canvas.gl.STATIC_DRAW
-    )
-    this.sphere.vertex.itemSize = 3
-    this.sphere.vertex.numItems = this.sphere.vertices.length / 3
-
-    this.sphere.normals = new Float32Array(array2)
-    this.sphere.normal = canvas.gl.createBuffer()
-    canvas.gl.bindBuffer(canvas.gl.ARRAY_BUFFER, this.sphere.normal)
-    canvas.gl.bufferData(
-      canvas.gl.ARRAY_BUFFER,
-      this.sphere.normals,
-      canvas.gl.STATIC_DRAW
-    )
-    this.sphere.normal.itemSize = 3
-    this.sphere.vertex.numItems = this.sphere.normals.length / 3
-  }
-
-  initSphereIndices () {
-    let array = []
-    for (let i = 0; i < 30; i++) {
-      for (let j = 0; j < 30; j++) {
-        const first = i * (30 + 1) + j
-        const second = first + 30 + 1
-        array.push(first)
-        array.push(second)
-        array.push(first + 1)
-        array.push(second)
-        array.push(second + 1)
-        array.push(first + 1)
-      }
-    }
-
-    this.sphere.indices = new Uint16Array(array)
-    this.sphere.index = canvas.gl.createBuffer()
-    canvas.gl.bindBuffer(canvas.gl.ELEMENT_ARRAY_BUFFER, this.sphere.index)
-    canvas.gl.bufferData(
-      canvas.gl.ELEMENT_ARRAY_BUFFER,
-      this.sphere.indices,
-      canvas.gl.STATIC_DRAW
-    )
-    this.sphere.index.itemSize = 1
-    this.sphere.index.numItems = this.sphere.indices.length
   }
 }
 
@@ -181,9 +102,57 @@ class Shader {
   }
 }
 
+class Inputs {
+  constructor () {
+    this.setupMode()
+    this.setupLight()
+    this.setupBounces()
+  }
+
+  setupMode () {
+    this.mode = 0.0
+    document.getElementById('mode-none').addEventListener('click', () => {
+      this.mode = 0.0
+    })
+    document.getElementById('mode-shadow').addEventListener('click', () => {
+      this.mode = 1.0
+    })
+    document.getElementById('mode-reflection').addEventListener('click', () => {
+      this.mode = 2.0
+    })
+    document.getElementById('mode-both').addEventListener('click', () => {
+      this.mode = 3.0
+    })
+  }
+
+  setupLight () {
+    this.light = 0.0
+    document.getElementById('light').addEventListener('input', e => {
+      this.light = e.target.value
+    })
+  }
+
+  setupBounces () {
+    this.bounces = 1
+    document.getElementById('bounces').addEventListener('input', e => {
+      this.bounces = e.target.value
+    })
+  }
+}
+
+class Scene {
+  constructor () {
+    this.init()
+  }
+
+  init () {
+    this.shader = new Shader(shaderCode.vertex, shaderCode.fragment)
+  }
+}
+
 const initialize = () => {
   canvas = new Canvas('canvas')
-  buffer = new Buffer()
+  inputs = new Inputs()
 }
 
 const drawScene = () => {
