@@ -13,7 +13,21 @@
 
     <title>CS360: Assignment 5</title>
   </head>
-  <body onload="webGLStart()">
+  <body onload="webGLStart()" style="display: flex;justify-content: center;">
     <canvas width="800" height="800" id="canvas"></canvas>
+
+    <div style="padding-left: 20px;">
+      <h3>Shading Mode</h3>
+      <input name="mode" id="mode-none" type="radio" value="0" checked><label for="mode-none">Phong</label></input><br />
+      <input name="mode" id="mode-shadow" type="radio" value="1"><label for="mode-shadow">Phong + Shadow</label></input><br />
+      <input name="mode" id="mode-reflection" type="radio" value="2"><label for="mode-reflection">Phong + Reflection</label></input><br />
+      <input name="mode" id="mode-both" type="radio" value="3"><label for="mode-both">Phong + Shadow + Reflection</label></input><br /><br />
+
+      <h3><label for="light">Move Light</label></h3>
+      <input id="light" type="range" value="0" min="-0.5" max="0.5" step="0.01" style="width: 200px;" /><br /><br />
+
+      <h3><label for="bounces">Bounce Limit</label></h3>
+      <input id="bounces" type="range" value="1" min="1" max="5" step="1" style="width: 200px;" />
+    </div>
   </body>
 </html>
